@@ -1,14 +1,22 @@
 """
 main.py
 Entry point for Smart File Wrangler.
-Handles CLI startup and delegates to GUI if needed.
+Determines whether to run CLI or GUI, and manages modular workflows:
+- Full workflow
+- Report only
+- Thumbnails only
 """
 
-def main():
-    """Main entry point for command-line usage."""
-    print("Smart File Wrangler started (CLI mode).")
-    # TODO: add argument parsing and call processing functions
+from smart_file_wrangler import cli, gui
+import sys
 
+def main():
+    if len(sys.argv) > 1:
+        # CLI mode
+        cli.run_cli()
+    else:
+        # GUI mode
+        gui.run_gui()
 
 if __name__ == "__main__":
     main()

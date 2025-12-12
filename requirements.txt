@@ -1,0 +1,6 @@
+# Smart File Wrangler dependencies
+pillow
+moviepy
+# Uncomment one of the GUI options:
+# streamlit
+# PySide6

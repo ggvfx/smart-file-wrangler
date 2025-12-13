@@ -5,8 +5,9 @@ Supports recursive scanning for use in organising subfolders.
 """
 
 from pathlib import Path
+from .config import Defaults  # import config to get global recurse setting
 
-def scan_folder(root_path, include_subfolders=True, file_types=None):
+def scan_folder(root_path, include_subfolders=None, file_types=None):
     """
     Return a list of file paths that match the given file types.
 
@@ -24,6 +25,10 @@ def scan_folder(root_path, include_subfolders=True, file_types=None):
     # Check that the path exists and is a directory
     if not root_path.is_dir():
         raise ValueError(f"{root_path} is not a valid directory")
+    
+    # Use config default if parameter not explicitly passed
+    if include_subfolders is None:
+        include_subfolders = Defaults["recurse_subfolders"]
 
     # Normalize file extensions to lower case, remove leading dots
     if file_types:
@@ -54,7 +59,7 @@ if __name__ == "__main__":
     sample_folder_path = Path(__file__).parent / "../../assets/sample_media"
 
     # Scan all files in the folder and subfolders
-    files_found = scan_folder(sample_folder_path, include_subfolders=True)
+    files_found = scan_folder(sample_folder_path)
 
     # Print results
     print("Files found:")

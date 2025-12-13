@@ -1,8 +1,15 @@
+"""
+metadata_reader.py
+Extracts metadata such as duration, resolution, file size, etc.
+"""
+
 from pathlib import Path
 from PIL import Image
 import subprocess
 import json
-from .utils import is_ffmpeg_available  # import the helper
+from .utils import is_ffmpeg_available, image_extensions, video_extensions, audio_extensions
+from .file_scanner import scan_folder
+from .config import Defaults
 
 
 # helper for video/audio files if ffmpeg is available
@@ -58,12 +65,6 @@ def extract_metadata(file_path):
         "sample_rate_hz": None,
     }
 
-    image_extensions = [
-        ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",
-        ".exr", ".dpx", ".cin", ".tga", ".hdr", ".sgi", ".rgb"
-    ]
-    video_extensions = [".mp4", ".mov", ".avi", ".mkv"]
-    audio_extensions = [".wav", ".mp3", ".aac", ".flac"]
 
     #Images
     if extension in image_extensions:
@@ -92,14 +93,47 @@ def extract_metadata(file_path):
     # other file types will still have file_size and extension
     return metadata
 
+# Extract metadata for all files in a folder
+def extract_metadata_for_folder(folder_path):
+    """
+    Generate metadata dictionaries for all supported files in a folder
+    (and optionally subfolders based on Defaults["recurse_subfolders"]).
+
+    Returns:
+        list[dict]: List of metadata dictionaries.
+    """
+    folder_path = Path(folder_path)
+    if not folder_path.is_dir():
+        raise ValueError(f"{folder_path} is not a valid directory")
+
+    # Use scan_folder to respect config for recursion
+    files = scan_folder(
+        folder_path,
+        include_subfolders=None,  # will default to Defaults["recurse_subfolders"]
+        file_types=image_extensions + video_extensions + audio_extensions
+    )
+
+    metadata_list = []
+    for file_path in files:
+        metadata_list.append(extract_metadata(file_path))
+
+    return metadata_list
+
 # quick test
 if __name__ == "__main__":
     here = Path(__file__).resolve().parent
     sample_folder = here.parent.parent / "assets" / "sample_media"
 
+    # Single file test
     for file_path in sample_folder.iterdir():
         if file_path.is_file():
             print("\nTesting:", file_path.name)
             m = extract_metadata(file_path)
             for k, v in m.items():
                 print(k, ":", v)
+
+    # Folder test
+    print("\nTesting folder metadata extraction:")
+    all_metadata = extract_metadata_for_folder(sample_folder)
+    for md in all_metadata:
+        print(md)

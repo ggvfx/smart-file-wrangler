@@ -17,15 +17,15 @@ def _populate_ffprobe_metadata(file_path, metadata):
 
     for stream in data.get("streams", []):
         if "width" in stream and "height" in stream:
-            metadata["resolution"] = (int(stream["width"]), int(stream["height"]))
-        if "duration" in stream and metadata["duration"] is None:
+            metadata["resolution_px"] = (int(stream["width"]), int(stream["height"]))
+        if "duration" in stream and metadata["duration_seconds"] is None:
             try:
-                metadata["duration"] = float(stream["duration"])
+                metadata["duration_seconds"] = float(stream["duration"])
             except ValueError:
                 pass
-        if "sample_rate" in stream and metadata["sample_rate"] is None:
+        if "sample_rate" in stream and metadata["sample_rate_hz"] is None:
             try:
-                metadata["sample_rate"] = int(stream["sample_rate"])
+                metadata["sample_rate_hz"] = int(stream["sample_rate"])
             except ValueError:
                 pass
 
@@ -40,20 +40,23 @@ def extract_metadata(file_path):
     file_path = Path(file_path)
     if not file_path.is_file():
         raise ValueError(f"{file_path} is not a valid file")
+    
+    # DEBUG: confirm whether ffmpeg is visible to Python
+    #print("ffmpeg available:", is_ffmpeg_available())
+    
+    extension = file_path.suffix.lower()
 
     #Default metadata
     metadata = {
-        "file_size": file_path.stat().st_size,
-        "type": "other",          # default type
+        "file_size_bytes": file_path.stat().st_size,
+        "media_type": "other",          # default type
         "extension": extension,   # store the file extension
-        "resolution": None,
+        "resolution_px": None,
         "format": None,
         "mode": None,
-        "duration": None,
-        "sample_rate": None,
+        "duration_seconds": None,
+        "sample_rate_hz": None,
     }
-
-    extension = file_path.suffix.lower()
 
     image_extensions = [
         ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",
@@ -64,10 +67,10 @@ def extract_metadata(file_path):
 
     #Images
     if extension in image_extensions:
-        metadata["type"] = "image"
+        metadata["media_type"] = "image"
         try:
             with Image.open(file_path) as image:
-                metadata["resolution"] = (image.width, image.height)
+                metadata["resolution_px"] = (image.width, image.height)
                 metadata["format"] = image.format
                 metadata["mode"] = image.mode
         except Exception:
@@ -75,14 +78,14 @@ def extract_metadata(file_path):
 
     #Videos
     elif extension in video_extensions:
-        metadata["type"] = "video"
+        metadata["media_type"] = "video"
         # only call ffprobe if it is available
         if is_ffmpeg_available():
             _populate_ffprobe_metadata(file_path, metadata)
 
     #Audio
     elif extension in audio_extensions:
-        metadata["type"] = "audio"
+        metadata["media_type"] = "audio"
         if is_ffmpeg_available():
             _populate_ffprobe_metadata(file_path, metadata)
 
@@ -91,8 +94,12 @@ def extract_metadata(file_path):
 
 # quick test
 if __name__ == "__main__":
-    test_file = Path("../assets/sample_media/video1.mp4")
-    m = extract_metadata(test_file)
-    for k, v in m.items():
-        print(k, ":", v)
+    here = Path(__file__).resolve().parent
+    sample_folder = here.parent.parent / "assets" / "sample_media"
 
+    for file_path in sample_folder.iterdir():
+        if file_path.is_file():
+            print("\nTesting:", file_path.name)
+            m = extract_metadata(file_path)
+            for k, v in m.items():
+                print(k, ":", v)

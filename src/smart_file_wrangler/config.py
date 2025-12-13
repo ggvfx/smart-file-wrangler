@@ -32,5 +32,14 @@ Defaults = {
         "extension",
         "resolution_px",
         "duration_seconds",
-    ]
+        "mode",
+        "format",
+    ],
+    # Organiser-specific defaults
+    "organiser_mode": "media_type",  # Options: "media_type", "extension", "filename_rule"
+    "filename_rules": [              # Only used if organiser_mode == "filename_rule"
+    # Example: {"type": "contains", "value": "SEF"}
+    ],
+    "default_unsorted_folder": "unsorted",  # Folder for unmatched files
+
 }

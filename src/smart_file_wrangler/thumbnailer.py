@@ -8,6 +8,7 @@ Supports:
 - Orientation selection (horizontal/vertical)
 - Selecting specific video frame for videos (default 24th)
 - Supports .mp4 and .mov output with selectable codecs
+“Video thumbnails require ffmpeg. If unavailable, only image thumbnails are generated.”
 """
 
 def create_thumbnail(path, out_path, size=256, orientation="horizontal", frame_number=24, codec="mp4"):

@@ -2,6 +2,7 @@
 report_writer.py
 Generates CSV/JSON reports or folder tree output.
 Can be used independently (report-only workflow).
+“Fields may be empty if metadata could not be extracted.”
 """
 
 def write_csv_report(data, output_path):

@@ -2,6 +2,7 @@
 gui.py
 UI layer for Smart File Wrangler.
 Implement Streamlit or PySide6 interface here.
+“Some options may be disabled if optional dependencies are not available.”
 """
 
 def launch_gui():

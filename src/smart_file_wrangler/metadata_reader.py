@@ -55,6 +55,7 @@ def extract_metadata(file_path):
 
     #Default metadata
     metadata = {
+        "file_path": str(file_path),
         "file_size_bytes": file_path.stat().st_size,
         "media_type": "other",          # default type
         "extension": extension,   # store the file extension
@@ -109,31 +110,51 @@ def extract_metadata_for_folder(folder_path):
     # Use scan_folder to respect config for recursion
     files = scan_folder(
         folder_path,
-        include_subfolders=None,  # will default to Defaults["recurse_subfolders"]
-        file_types=image_extensions + video_extensions + audio_extensions
+        include_subfolders=Defaults["recurse_subfolders"],
+        file_types=None
     )
 
-    metadata_list = []
-    for file_path in files:
-        metadata_list.append(extract_metadata(file_path))
+    all_file_metadata = []  # This will store metadata for every file
 
-    return metadata_list
+    for current_file in files:
+        # Extract full metadata for this file
+        file_metadata = extract_metadata(current_file)
+
+        media_type = file_metadata["media_type"]
+        if not Defaults["include_media_types"].get(media_type, False):
+            continue  # skip this file entirely
+
+        # Keep only the metadata fields that the user wants (from Defaults)
+        filtered_metadata = {}
+        for key, value in file_metadata.items():
+            if key in Defaults["metadata_fields"]:
+                filtered_metadata[key] = value
+
+        #DEBUG
+        filtered_metadata["file_path"] = str(current_file)
+
+        # Add the filtered metadata for this file to the main list
+        all_file_metadata.append(filtered_metadata)
+
+    # Return the list containing metadata for all files
+    return all_file_metadata
 
 # quick test
 if __name__ == "__main__":
     here = Path(__file__).resolve().parent
     sample_folder = here.parent.parent / "assets" / "sample_media"
 
-    # Single file test
-    for file_path in sample_folder.iterdir():
-        if file_path.is_file():
-            print("\nTesting:", file_path.name)
-            m = extract_metadata(file_path)
-            for k, v in m.items():
-                print(k, ":", v)
+    # Test metadata extraction for individual files
+    print("\n--- Single file metadata test ---")
+    for current_file in sample_folder.iterdir():
+        if current_file.is_file():
+            print(f"\nTesting file: {current_file.name}")
+            current_file_metadata = extract_metadata(current_file)
+            for key, value in current_file_metadata.items():
+                print(f"{key} : {value}")
 
-    # Folder test
-    print("\nTesting folder metadata extraction:")
-    all_metadata = extract_metadata_for_folder(sample_folder)
-    for md in all_metadata:
-        print(md)
+    # Test metadata extraction for the whole folder
+    print("\n--- Folder metadata extraction test ---")
+    all_files_metadata = extract_metadata_for_folder(sample_folder)
+    for file_metadata in all_files_metadata:
+        print(file_metadata)

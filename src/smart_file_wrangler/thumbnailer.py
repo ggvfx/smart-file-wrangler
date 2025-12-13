@@ -33,9 +33,9 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
     """
     file_path = Path(file_path)
     if size is None:
-        size = Defaults["thumbnail_size"]
+        size = Defaults["thumb_size"]
     if out_path is None:
-        out_path = get_thumbnail_path(file_path)
+        out_path = get_thumbnail_path(file_path, thumb_folder_name=Defaults["thumb_folder_name"], thumb_suffix=Defaults["thumb_suffix"])
 
     if not file_path.is_file():
         raise ValueError(f"{file_path} is not a valid file")
@@ -44,13 +44,15 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
 
     # Check if the file is an image
     if extension in image_extensions:
-        create_image_thumbnail(file_path, out_path, size)
+        if Defaults["thumb_images"]:
+            create_image_thumbnail(file_path, out_path, size)
     # Check if the file is a video
     elif extension in video_extensions:
-        if is_ffmpeg_available():
-            create_video_thumbnail(file_path, out_path, size, codec)
-        else:
-            print(f"Skipping video thumbnail for {file_path.name}: ffmpeg not available")
+        if Defaults["thumb_videos"]:
+            if is_ffmpeg_available():
+                create_video_thumbnail(file_path, out_path, size, codec)
+            else:
+                print(f"Skipping video thumbnail for {file_path.name}: ffmpeg not available")
     else:
         print(f"Skipping {file_path.name}: unsupported file type")
 
@@ -106,23 +108,36 @@ def generate_thumbnails_for_folder(folder_path, size=None, codec="mp4"):
     if not folder_path.is_dir():
         raise ValueError(f"{folder_path} is not a valid directory")
     
-    if size is None:
-        size = Defaults["thumbnail_size"]
-
-    # Decide whether to recurse based on config
-    files = scan_folder(
-        folder_path,
-        file_types=image_extensions + video_extensions
-    )
+    # scan folder using config defaults (includes recurse_subfolders)
+    files = scan_folder(folder_path)
 
     for file_path in files:
-        thumb_path = get_thumbnail_path(file_path)
-        create_thumbnail(file_path, out_path=thumb_path, size=size, codec=codec)
+        ext = file_path.suffix.lower()
+        # skip if not enabled in Defaults
+        if ext in image_extensions and not Defaults["thumb_images"]:
+            continue
+        if ext in video_extensions and not Defaults["thumb_videos"]:
+            continue
+
+        thumb_path = get_thumbnail_path(
+            file_path,
+            thumb_folder_name=Defaults["thumb_folder_name"],
+            thumb_suffix=Defaults["thumb_suffix"]
+        )
+        create_thumbnail(file_path, out_path=thumb_path, size=Defaults["thumb_size"], codec=codec)
 
 
-# example usage for testing
+# quick test
 if __name__ == "__main__":
-    here = Path(__file__).resolve().parent
-    sample_folder = here.parent.parent / "assets" / "sample_media"
+    # Get the path to the sample media folder
+    current_directory = Path(__file__).resolve().parent
+    sample_media_folder = current_directory.parent.parent / "assets" / "sample_media"
 
-    generate_thumbnails_for_folder(sample_folder)
+    print("\n--- Thumbnail generation test ---")
+
+    # Generate thumbnails for all supported files in the folder
+    # This will respect Defaults["recurse_subfolders"]
+    generate_thumbnails_for_folder(sample_media_folder)
+
+    print("\nThumbnail generation completed.")
+

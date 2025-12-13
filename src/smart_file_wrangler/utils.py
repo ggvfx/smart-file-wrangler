@@ -6,6 +6,7 @@ Shared helper functions for Smart File Wrangler.
 from pathlib import Path
 import os
 import subprocess
+from .config import Defaults
 
 def ensure_directory(path):
     """Create the directory if it doesn't exist."""
@@ -63,7 +64,18 @@ def get_thumbnail_path(file_path: Path, thumb_folder_name="thumbnails", thumb_su
     Returns:
         Path: Full path to the thumbnail
     """
+    if thumb_folder_name is None:
+        thumb_folder_name = Defaults["thumb_folder_name"]
+    if thumb_suffix is None:
+        thumb_suffix = Defaults["thumb_suffix"]
     thumb_dir = file_path.parent / thumb_folder_name
     thumb_dir.mkdir(parents=True, exist_ok=True)
     thumb_name = f"{file_path.stem}{thumb_suffix}{thumb_ext}"
     return thumb_dir / thumb_name
+
+
+def filter_metadata(metadata: dict, fields: list = None) -> dict:
+    """Return only the keys specified in fields. If fields=None, return all."""
+    if fields is None:
+        fields = Defaults["metadata_fields"]
+    return {k: v for k, v in metadata.items() if k in fields}

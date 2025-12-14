@@ -6,6 +6,7 @@ Supports recursive scanning for use in organising subfolders.
 
 from pathlib import Path
 from .config import Defaults  # import config to get global recurse setting
+from .utils import detect_frame_sequences
 
 def scan_folder(root_path, include_subfolders=None, file_types=None):
     """
@@ -26,7 +27,7 @@ def scan_folder(root_path, include_subfolders=None, file_types=None):
     if not root_path.is_dir():
         raise ValueError(f"{root_path} is not a valid directory")
     
-    # Use config default if parameter not explicitly passed
+    # Use default from config if not explicitly provided
     if include_subfolders is None:
         include_subfolders = Defaults["recurse_subfolders"]
 
@@ -53,15 +54,58 @@ def scan_folder(root_path, include_subfolders=None, file_types=None):
     return matched_files
 
 
-# Example usage (for testing)
+def scan_files(folder_path, include_subfolders=None, file_types=None, combine_frame_seq=True):
+    """
+    Return a list of file paths or frame sequences that match the given file types.
+
+    Parameters:
+        folder_path (str | Path): Folder to scan.
+        include_subfolders (bool | None): Whether to include subfolders.
+        file_types (list[str] | None): Optional filter by file extension.
+        combine_frame_seq (bool): If True, consecutive frame sequences are treated as one item.
+
+    Returns:
+        list[Path | dict]: List of file paths or frame sequence dictionaries.
+        Frame sequence dict contains keys:
+            "folder"  -> Path to sequence folder
+            "basename"-> Base name of sequence (without frame number)
+            "ext"     -> File extension (including dot)
+            "frames"  -> Sorted list of frame numbers in the sequence
+    """
+    # Scan files in the folder (recursively if requested)
+    files = scan_folder(folder_path, include_subfolders=include_subfolders, file_types=file_types)
+
+    if combine_frame_seq:
+        # Detect and group consecutive frame sequences
+        items = detect_frame_sequences(files)
+    else:
+        items = files
+
+    return items
+
+
+# Example usage for testing
 if __name__ == "__main__":
-    # Update this path relative to your current working directory
-    sample_folder_path = Path(__file__).parent / "../../assets/sample_media"
+    from pprint import pprint
 
-    # Scan all files in the folder and subfolders
-    files_found = scan_folder(sample_folder_path)
+    # Path to your test media folder
+    test_folder = Path(r"D:\_repos\smart-file-wrangler\assets\sample_media")
 
-    # Print results
-    print("Files found:")
-    for file_path in files_found:
-        print(file_path)
+    print("\nScanning files (with frame sequence detection enabled):\n")
+
+    # Run the scan
+    scanned_items = scan_files(test_folder)
+
+    # Print results in a readable way
+    for item in scanned_items:
+        if isinstance(item, dict):
+            print("Frame sequence found:")
+            print(f"  folder   : {item['folder']}")
+            print(f"  basename : {item['basename']}")
+            print(f"  ext      : {item['ext']}")
+            print(f"  frames   : {item['frames']}")
+            print(f"  count    : {len(item['frames'])}")
+            print()
+        else:
+            print(f"Single file: {item}")
+

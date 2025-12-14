@@ -44,6 +44,23 @@ def extract_metadata(file_path):
 
     Video and audio metadata is only extracted if ffmpeg/ffprobe is available.
     """
+    # handle frame sequence dicts
+    if isinstance(file_path, dict) and "frames" in file_path:
+        metadata = {
+            "file_path": str(file_path["folder"] / file_path["basename"]),  # represent sequence as one item
+            "file_size_bytes": None,  # unknown total size
+            "media_type": "video",
+            "extension": file_path["ext"],
+            "resolution_px": None,  # could open first frame if desired
+            "format": None,
+            "mode": None,
+            "duration_seconds": None,
+            "sample_rate_hz": None,
+            "frame_count": len(file_path["frames"]), #For frame sequences
+        }
+        return metadata
+
+    # otherwise treat as regular file
     file_path = Path(file_path)
     if not file_path.is_file():
         raise ValueError(f"{file_path} is not a valid file")

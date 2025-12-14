@@ -7,12 +7,16 @@ from pathlib import Path
 import os
 import subprocess
 from .config import Defaults
+import re
+from pathlib import Path
+from collections import defaultdict
 
 def ensure_directory(path):
     """Create the directory if it doesn't exist."""
     path = Path(path)
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
+
 
 def is_ffmpeg_available():
     """
@@ -79,3 +83,102 @@ def filter_metadata(metadata: dict, fields: list = None) -> dict:
     if fields is None:
         fields = Defaults["metadata_fields"]
     return {k: v for k, v in metadata.items() if k in fields}
+
+
+def detect_frame_sequences(files, min_sequence_length=2):
+    """
+    Detects frame sequences in a list of files.
+
+    Args:
+        files (list[Path or str]): List of file paths.
+        min_sequence_length (int): Minimum number of frames to consider a sequence.
+
+    Returns:
+        list: Sequence dicts and standalone files.
+        Example:
+        [
+            {"basename": "shot01", "frames": [1001,1002,1003], "ext": ".exr", "folder": Path(...)},
+            Path("standalone_file.txt")
+        ]
+    """
+    sequences = defaultdict(lambda: {"frames": [], "ext": None, "folder": None})
+    standalone_files = []
+
+    # Regex to capture frame numbers with flexible separators before the number
+    pattern = re.compile(r"(.+?)[._-](\d+)(\.[^.]+)$")
+
+    for file_path in files:
+        path = Path(file_path)
+        match = pattern.match(path.name)
+        if match:
+            base, frame_str, ext = match.groups()
+            frame_num = int(frame_str)
+            key = (path.parent, base, ext)
+            sequences[key]["frames"].append(frame_num)
+            sequences[key]["ext"] = ext
+            sequences[key]["folder"] = path.parent
+        else:
+            standalone_files.append(path)
+
+    # Build final list, filter sequences by min length
+    result = []
+    for (folder, base, ext), seq in sequences.items():
+        frames = sorted(seq["frames"])
+        if len(frames) >= min_sequence_length:
+            result.append({
+                "basename": base,
+                "frames": frames,
+                "ext": ext,
+                "folder": folder
+            })
+        else:
+            # Treat short sequences as individual files
+            for f in frames:
+                filename = folder / f"{base}.{str(f).zfill(len(str(f)))}{ext}"
+                standalone_files.append(filename)
+
+    # Combine sequences + standalone files
+    return result + standalone_files
+
+def group_frame_sequences(files, min_sequence_length=2):
+    """Wrapper to match organiser.py naming."""
+    return detect_frame_sequences(files, min_sequence_length=min_sequence_length)
+
+def generate_thumbnail_for_sequence(sequence_dict):
+    """
+    Generate a single thumbnail for a frame sequence using the middle frame.
+    
+    Parameters:
+        sequence_dict (dict): {"basename": ..., "frames": [...], "ext": ..., "folder": Path(...)}
+    
+    Returns:
+        Path to the generated thumbnail (optional)
+    """
+    frames = sequence_dict["frames"]
+    folder = sequence_dict["folder"]
+    basename = sequence_dict["basename"]
+    ext = sequence_dict["ext"]
+
+    if not frames:
+        # No frames available, skip
+        if Defaults.get("verbose", True):
+            print(f"No frames found for sequence: {basename}")
+        return None
+
+    # Pick the middle frame
+    middle_index = len(frames) // 2
+    middle_frame_number = frames[middle_index]
+
+    # Construct the full path to the middle frame
+    middle_frame_file = folder / f"{basename}.{str(middle_frame_number).zfill(len(str(frames[-1])))}{ext}"
+
+    # Generate the thumbnail path (using the helper function from utils.py)
+    thumbnail_path = get_thumbnail_path(middle_frame_file)
+
+    # TODO: implement actual thumbnail generation if needed
+    # For now, just print debug info
+    if Defaults.get("verbose", True):
+        print(f"Generating thumbnail for sequence '{basename}': using frame {middle_frame_number} -> {thumbnail_path}")
+
+    return thumbnail_path
+

@@ -6,6 +6,7 @@ Holds default settings and shared configuration structures.
 Defaults = {
     "recurse_subfolders": True,
     "file_types": ["mp4", "png", "wav", "jpg"],
+    "combine_frame_seq" : True,
     "generate_thumbnails": False,
     "thumb_images": True,
     "thumb_videos": True,
@@ -13,7 +14,7 @@ Defaults = {
     "thumb_suffix": "_thumb",
     "thumb_folder_name": "thumbnails",
     "move_files": False,
-    "verbose": False,
+    "verbose": True,
     "expand_log": False,
     "output_csv": True,
     "output_json": False,
@@ -34,6 +35,7 @@ Defaults = {
         "duration_seconds",
         "mode",
         "format",
+        "frame_count"
     ],
     # Organiser-specific defaults
     "organiser_mode": "media_type",  # Options: "media_type", "extension", "filename_rule"

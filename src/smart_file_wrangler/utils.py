@@ -4,11 +4,9 @@ Shared helper functions for Smart File Wrangler.
 """
 
 from pathlib import Path
-import os
 import subprocess
 from .config import Defaults
 import re
-from pathlib import Path
 from collections import defaultdict
 
 def ensure_directory(path):
@@ -112,11 +110,13 @@ def detect_frame_sequences(files, min_sequence_length=2):
         match = pattern.match(path.name)
         if match:
             base, frame_str, ext = match.groups()
+            separator = path.name[len(base)]
             frame_num = int(frame_str)
             key = (path.parent, base, ext)
             sequences[key]["frames"].append(frame_num)
             sequences[key]["ext"] = ext
             sequences[key]["folder"] = path.parent
+            sequences[key]["separator"] = separator
         else:
             standalone_files.append(path)
 
@@ -129,12 +129,22 @@ def detect_frame_sequences(files, min_sequence_length=2):
                 "basename": base,
                 "frames": frames,
                 "ext": ext,
-                "folder": folder
+                "folder": folder,
+                "separator": seq.get("separator", ".")
             })
         else:
             # Treat short sequences as individual files
-            for f in frames:
-                filename = folder / f"{base}.{str(f).zfill(len(str(f)))}{ext}"
+            for frame in frames:
+                # Attempt to detect the original separator before the frame number
+                sep_match = re.search(r"(.+?)([._-])\d+(\.[^.]+)$", str(folder / f"{base}{ext}"))
+    
+                if sep_match:
+                    separator = sep_match.group(2)
+                else:
+                    separator = "."
+                    print(f"Warning: could not detect separator for frame sequence '{base}' in folder '{folder}', defaulting to '{separator}'.")
+
+                filename = folder / f"{base}{separator}{frame}{ext}"
                 standalone_files.append(filename)
 
     # Combine sequences + standalone files

@@ -62,27 +62,9 @@ def organise_files(folder_path, output_dir=None, move_files=None, mode="extensio
         if isinstance(item, dict) and "frames" in item:
             seq_name = f"{item['basename']}.{item['frames'][0]}-{item['frames'][-1]}{item['ext']}"
 
-            # Determine destination folder based on mode, mirrored inside the original folder
-            if mode == "extension":
-                dest_folder = item["folder"] / item['ext'].lstrip(".").lower()
-            elif mode == "media_type":
-                dest_folder = item["folder"] / "video"
-            elif mode == "string_rule" and rules:
-                dest_folder = None
-                seq_name_lower = seq_name.lower()
-                for rule in rules:
-                    rule_type = rule.get("type")
-                    rule_value = rule.get("value", "").lower()
-                    if rule_type == "contains" and rule_value in seq_name_lower:
-                        dest_folder = item["folder"] / rule_value
-                        break
-                    elif rule_type == "starts_with" and seq_name_lower.startswith(rule_value):
-                        dest_folder = item["folder"] / rule_value
-                        break
-                if dest_folder is None:
-                    dest_folder = item["folder"] / default_folder
-            else:
-                dest_folder = item["folder"] / default_folder
+            # REPLACE HERE: dynamically use extension as folder name
+            ext_folder_name = item['ext'].lstrip(".").lower()
+            dest_folder = item["folder"] / ext_folder_name
 
             # Create destination folder if it doesn't exist
             if not dest_folder.exists():
@@ -94,7 +76,8 @@ def organise_files(folder_path, output_dir=None, move_files=None, mode="extensio
             # Copy/move each frame individually
             frames_copied = 0
             for frame_number in item["frames"]:
-                frame_file_name = f"{item['basename']}.{frame_number}{item['ext']}"
+                separator = item.get("separator", ".")
+                frame_file_name = f"{item['basename']}{separator}{frame_number}{item['ext']}"
                 src_file = item["folder"] / frame_file_name
                 dst_file = dest_folder / frame_file_name
 

@@ -7,7 +7,8 @@ Defaults = {
     "recurse_subfolders": True,
     "file_types": ["mp4", "png", "wav", "jpg"],
     "combine_frame_seq" : True,
-    "generate_thumbnails": False,
+    "generate_thumbnails": True,
+    "enable_organiser": False,
     "thumb_images": True,
     "thumb_videos": True,
     "thumb_size": 512,
@@ -35,7 +36,8 @@ Defaults = {
         "duration_seconds",
         "mode",
         "format",
-        "frame_count"
+        "frame_count",
+        "middle_frame_number",
     ],
     # Organiser-specific defaults
     "organiser_mode": "media_type",  # Options: "media_type", "extension", "filename_rule"

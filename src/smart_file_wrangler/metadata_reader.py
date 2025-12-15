@@ -46,19 +46,28 @@ def extract_metadata(file_path):
     """
     # handle frame sequence dicts
     if isinstance(file_path, dict) and "frames" in file_path:
+        frames = file_path["frames"]
+        middle_index = len(frames) // 2
+        middle_frame_number = frames[middle_index]
+
         metadata = {
-            "file_path": str(file_path["folder"] / file_path["basename"]),  # represent sequence as one item
-            "file_size_bytes": None,  # unknown total size
-            "media_type": "video",
+            # represent the sequence as a single logical item
+            "file_path": str(file_path["folder"] / file_path["basename"]),
+            "file_size_bytes": None,          # unknown total size
+            "media_type": "video",            # sequences are treated as video
             "extension": file_path["ext"],
-            "resolution_px": None,  # could open first frame if desired
+            "resolution_px": None,
             "format": None,
             "mode": None,
-            "duration_seconds": None,
+            "duration_seconds": None,         # unknown for sequences
             "sample_rate_hz": None,
-            "frame_count": len(file_path["frames"]), #For frame sequences
+
+            # sequence-specific metadata
+            "frame_count": len(frames),
+            "middle_frame_number": middle_frame_number,
         }
         return metadata
+
 
     # otherwise treat as regular file
     file_path = Path(file_path)
@@ -148,7 +157,7 @@ def extract_metadata_for_folder(folder_path):
                 filtered_metadata[key] = value
 
         #DEBUG
-        filtered_metadata["file_path"] = str(current_file)
+        #filtered_metadata["file_path"] = str(current_file)
 
         # Add the filtered metadata for this file to the main list
         all_file_metadata.append(filtered_metadata)
@@ -175,3 +184,15 @@ if __name__ == "__main__":
     all_files_metadata = extract_metadata_for_folder(sample_folder)
     for file_metadata in all_files_metadata:
         print(file_metadata)
+
+    #Metadata for frame sequences
+    from .utils import group_frame_sequences
+
+    print("\n--- Frame sequence metadata test ---")
+    files = scan_folder(sample_folder, include_subfolders=True)
+    items = group_frame_sequences(files)
+
+    for item in items:
+        if isinstance(item, dict):
+            meta = extract_metadata(item)
+            print(meta)

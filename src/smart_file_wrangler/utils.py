@@ -9,6 +9,7 @@ from .config import Defaults
 import re
 from collections import defaultdict
 
+
 def ensure_directory(path):
     """Create the directory if it doesn't exist."""
     path = Path(path)
@@ -71,7 +72,6 @@ def get_thumbnail_path(file_path: Path, thumb_folder_name="thumbnails", thumb_su
     if thumb_suffix is None:
         thumb_suffix = Defaults["thumb_suffix"]
     thumb_dir = file_path.parent / thumb_folder_name
-    thumb_dir.mkdir(parents=True, exist_ok=True)
     thumb_name = f"{file_path.stem}{thumb_suffix}{thumb_ext}"
     return thumb_dir / thumb_name
 
@@ -153,42 +153,4 @@ def detect_frame_sequences(files, min_sequence_length=2):
 def group_frame_sequences(files, min_sequence_length=2):
     """Wrapper to match organiser.py naming."""
     return detect_frame_sequences(files, min_sequence_length=min_sequence_length)
-
-def generate_thumbnail_for_sequence(sequence_dict):
-    """
-    Generate a single thumbnail for a frame sequence using the middle frame.
-    
-    Parameters:
-        sequence_dict (dict): {"basename": ..., "frames": [...], "ext": ..., "folder": Path(...)}
-    
-    Returns:
-        Path to the generated thumbnail (optional)
-    """
-    frames = sequence_dict["frames"]
-    folder = sequence_dict["folder"]
-    basename = sequence_dict["basename"]
-    ext = sequence_dict["ext"]
-
-    if not frames:
-        # No frames available, skip
-        if Defaults.get("verbose", True):
-            print(f"No frames found for sequence: {basename}")
-        return None
-
-    # Pick the middle frame
-    middle_index = len(frames) // 2
-    middle_frame_number = frames[middle_index]
-
-    # Construct the full path to the middle frame
-    middle_frame_file = folder / f"{basename}.{str(middle_frame_number).zfill(len(str(frames[-1])))}{ext}"
-
-    # Generate the thumbnail path (using the helper function from utils.py)
-    thumbnail_path = get_thumbnail_path(middle_frame_file)
-
-    # TODO: implement actual thumbnail generation if needed
-    # For now, just print debug info
-    if Defaults.get("verbose", True):
-        print(f"Generating thumbnail for sequence '{basename}': using frame {middle_frame_number} -> {thumbnail_path}")
-
-    return thumbnail_path
 

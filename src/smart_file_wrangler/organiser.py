@@ -15,7 +15,7 @@ from shutil import copy2, move
 from .file_scanner import scan_folder
 from .metadata_reader import extract_metadata
 from .config import Defaults
-from .utils import group_frame_sequences, generate_thumbnail_for_sequence
+from .utils import group_frame_sequences
 
 
 def organise_files(folder_path, output_dir=None, move_files=None, mode="extension", rules=None, default_folder="unsorted"):
@@ -30,6 +30,12 @@ def organise_files(folder_path, output_dir=None, move_files=None, mode="extensio
         rules (list[dict] | None): User-defined rules for string_rule mode.
         default_folder (str): Folder for files that don't match any rule or have no extension.
     """
+
+    if not Defaults.get("enable_organiser", True):
+        if Defaults.get("verbose", True):
+            print("Organiser disabled — skipping file moves/copies")
+        return
+
     folder_path = Path(folder_path)
     if not folder_path.is_dir():
         raise ValueError(f"{folder_path} is not a valid directory")
@@ -97,9 +103,6 @@ def organise_files(folder_path, output_dir=None, move_files=None, mode="extensio
                 if Defaults["verbose"]:
                     print(f'{action} "{src_file}" → folder "{dest_folder.name}"')
 
-            # Generate a single thumbnail if enabled
-            if Defaults.get("generate_thumbnails", False):
-                generate_thumbnail_for_sequence(item)
 
             if frames_copied > 0:
                 processed_files += 1

@@ -19,6 +19,9 @@ from .utils import is_ffmpeg_available, image_extensions, video_extensions, get_
 from .config import Defaults
 from .file_scanner import scan_folder
 import subprocess
+import re
+
+frame_pattern = re.compile(r".+[._-]\d+(\.[^.]+)$")
 
 def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
     """
@@ -71,7 +74,9 @@ def create_image_thumbnail(file_path, out_path, size):
             # resize image
             img_resized = img.resize((new_width, new_height), Image.LANCZOS)
 
+            #Make dir
             out_path.parent.mkdir(parents=True, exist_ok=True)
+
             img_resized.save(out_path)
             print(f"Image thumbnail created: {out_path}")
 
@@ -86,6 +91,8 @@ def create_video_thumbnail(file_path, out_path, size, codec):
         # ffmpeg command: picks a representative frame and scales it
         command = [
             "ffmpeg",
+            "-hide_banner",
+            "-loglevel", "error",
             "-i", str(file_path),
             "-vf", f"thumbnail,scale={size}:-1",
             "-frames:v", "1",
@@ -112,6 +119,10 @@ def generate_thumbnails_for_folder(folder_path, size=None, codec="mp4"):
     files = scan_folder(folder_path)
 
     for file_path in files:
+        # Skip frame sequence members
+        if frame_pattern.match(file_path.name):
+            continue
+
         ext = file_path.suffix.lower()
         # skip if not enabled in Defaults
         if ext in image_extensions and not Defaults["thumb_images"]:
@@ -125,6 +136,37 @@ def generate_thumbnails_for_folder(folder_path, size=None, codec="mp4"):
             thumb_suffix=Defaults["thumb_suffix"]
         )
         create_thumbnail(file_path, out_path=thumb_path, size=Defaults["thumb_size"], codec=codec)
+
+def generate_thumbnail_for_sequence(sequence_dict):
+    from .utils import get_thumbnail_path
+
+    frames = sequence_dict["frames"]
+    folder = sequence_dict["folder"]
+    basename = sequence_dict["basename"]
+    ext = sequence_dict["ext"]
+    separator = sequence_dict.get("separator", ".")
+
+    if not frames:
+        return None
+
+    middle_index = len(frames) // 2
+    middle_frame_number = frames[middle_index]
+
+    frame_path = folder / f"{basename}{separator}{middle_frame_number}{ext}"
+    if not frame_path.exists():
+        print(f"Warning: middle frame missing: {frame_path}")
+        return None
+
+    thumb_path = get_thumbnail_path(frame_path)
+    create_thumbnail(frame_path, out_path=thumb_path)
+
+    if Defaults.get("verbose", True):
+        print(
+            f"Thumbnail created for sequence '{basename}' "
+            f"(frame {middle_frame_number}) -> {thumb_path}"
+        )
+
+    return thumb_path
 
 
 # quick test

@@ -24,7 +24,10 @@ def _populate_ffprobe_metadata(file_path, metadata):
 
     for stream in data.get("streams", []):
         if "width" in stream and "height" in stream:
-            metadata["resolution_px"] = (int(stream["width"]), int(stream["height"]))
+            width = int(stream["width"])
+            height = int(stream["height"])
+            metadata["resolution_px"] = f"{width}x{height}"
+
         if "duration" in stream and metadata["duration_seconds"] is None:
             try:
                 metadata["duration_seconds"] = float(stream["duration"])
@@ -44,61 +47,65 @@ def extract_metadata(file_path):
 
     Video and audio metadata is only extracted if ffmpeg/ffprobe is available.
     """
-    # handle frame sequence dicts
+
+    # 1) FRAME SEQUENCES FIRST
     if isinstance(file_path, dict) and "frames" in file_path:
         frames = file_path["frames"]
-        middle_index = len(frames) // 2
-        middle_frame_number = frames[middle_index]
 
         metadata = {
-            # represent the sequence as a single logical item
-            "file_path": str(file_path["folder"] / file_path["basename"]),
-            "file_size_bytes": None,          # unknown total size
-            "media_type": "video",            # sequences are treated as video
+            "file_path": f"{file_path['basename']}.[{frames[0]}-{frames[-1]}]{file_path['ext']}",
+            "file_size_mb": None,
+            "media_type": "video",
             "extension": file_path["ext"],
             "resolution_px": None,
-            "format": None,
-            "mode": None,
-            "duration_seconds": None,         # unknown for sequences
+            "duration_seconds": None,
             "sample_rate_hz": None,
-
-            # sequence-specific metadata
+            "mode": None,
+            "format": None,
             "frame_count": len(frames),
-            "middle_frame_number": middle_frame_number,
+            "middle_frame_number": frames[len(frames) // 2],
+            "start_frame": frames[0],
+            "end_frame": frames[-1],
         }
         return metadata
 
 
-    # otherwise treat as regular file
+    # 2) NORMAL FILES
     file_path = Path(file_path)
+
     if not file_path.is_file():
         raise ValueError(f"{file_path} is not a valid file")
+
+    file_size_bytes = file_path.stat().st_size
+    file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
+
     
     # DEBUG: confirm whether ffmpeg is visible to Python
     #print("ffmpeg available:", is_ffmpeg_available())
     
     extension = file_path.suffix.lower()
 
+
+
     #Default metadata
     metadata = {
         "file_path": str(file_path),
-        "file_size_bytes": file_path.stat().st_size,
-        "media_type": "other",          # default type
-        "extension": extension,   # store the file extension
+        "file_size_mb": file_size_mb,
+        "media_type": "other",
+        "extension": file_path.suffix.lower(),
         "resolution_px": None,
-        "format": None,
-        "mode": None,
         "duration_seconds": None,
         "sample_rate_hz": None,
+        "mode": None,
+        "format": None,
     }
-
 
     #Images
     if extension in image_extensions:
         metadata["media_type"] = "image"
         try:
             with Image.open(file_path) as image:
-                metadata["resolution_px"] = (image.width, image.height)
+                metadata["resolution_px"] = f"{image.width}x{image.height}"
                 metadata["format"] = image.format
                 metadata["mode"] = image.mode
         except Exception:

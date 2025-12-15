@@ -23,6 +23,9 @@ from .organiser import organise_files
 from .file_scanner import scan_folder
 from .utils import group_frame_sequences
 from .thumbnailer import generate_thumbnail_for_sequence, create_thumbnail
+from .metadata_reader import extract_metadata
+from .report_writer import generate_reports
+
 
 
 def run_pipeline(folder_path):
@@ -32,35 +35,54 @@ def run_pipeline(folder_path):
     if Defaults.get("enable_organiser", True):
         organise_files(folder_path)
 
-    # Thumbnails
+    #Thumbnails
     if Defaults.get("generate_thumbnails", False):
 
         files = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"])
 
-        sequence_items = []
-        sequence_files = set()
-
         if Defaults.get("combine_frame_seq", True):
             items = group_frame_sequences(files)
+        else:
+            items = files
 
-            for item in items:
-                if isinstance(item, dict) and "frames" in item:
-                    sequence_items.append(item)
+        for item in items:
+            # frame sequence → single thumbnail
+            if isinstance(item, dict) and "frames" in item:
+                generate_thumbnail_for_sequence(item)
 
-                    separator = item.get("separator", ".")
-                    for frame in item["frames"]:
-                        frame_file = item["folder"] / f"{item['basename']}{separator}{frame}{item['ext']}"
-                        sequence_files.add(frame_file.resolve())
+            # normal file → normal thumbnail
+            else:
+                create_thumbnail(item)
 
-        # thumbnail regular files (excluding sequence frames)
-        for file_path in files:
-            if file_path.resolve() in sequence_files:
-                continue
-            create_thumbnail(file_path)
 
-        # thumbnail frame sequences (single middle frame only)
-        for sequence in sequence_items:
-            generate_thumbnail_for_sequence(sequence)
+    #Reports
+    if Defaults.get("output_csv") or Defaults.get("output_json") or Defaults.get("output_tree"):
+
+        files = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"])
+
+        if Defaults.get("combine_frame_seq", True):
+            report_items = group_frame_sequences(files)
+        else:
+            report_items = files
+
+        metadata = []
+        for item in report_items:
+            metadata.append(extract_metadata(item))
+
+        output_dir = Defaults["report_output_dir"] or folder_path
+
+        generate_reports(
+            metadata=metadata,
+            input_folder=folder_path,
+            output_dir=output_dir,
+            fields=Defaults["metadata_fields"],
+            sort_by=Defaults.get("metadata_sort_by"),
+            reverse=Defaults.get("metadata_sort_reverse", False),
+            csv_enabled=Defaults.get("output_csv"),
+            json_enabled=Defaults.get("output_json"),
+            tree_enabled=Defaults.get("output_tree"),
+        )
+
 
 
 

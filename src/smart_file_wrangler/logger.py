@@ -3,6 +3,9 @@ logger.py
 Handles verbose output and UI-integrated logging.
 """
 
+def log(message):
+    print(message)
+
 class Logger:
     def __init__(self, verbose=False, ui_callback=None):
         """

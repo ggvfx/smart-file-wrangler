@@ -29,7 +29,7 @@ Defaults = {
     },
     "metadata_fields": [
         "file_path",
-        "file_size_mb",
+        "file_size",
         "media_type",
         "extension",
         "resolution_px",

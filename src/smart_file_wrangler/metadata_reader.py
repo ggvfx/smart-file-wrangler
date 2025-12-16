@@ -64,28 +64,41 @@ def extract_metadata(file_path):
             if frame_path.exists():
                 total_bytes += frame_path.stat().st_size
 
-        file_size_mb = round(total_bytes / (1024 * 1024), 2)
+        #file_size_mb = round(total_bytes / (1024 * 1024), 2)
         
         start_frame = frames[0]
         end_frame = frames[-1]
         middle_frame = frames[len(frames) // 2]
 
+        # Frame seq resolution
+        middle_frame_path = folder / f"{basename}{separator}{middle_frame}{extension}"
+        resolution_px = None
+
+        if middle_frame_path.exists():
+            try:
+                with Image.open(middle_frame_path) as image:
+                    resolution_px = f"{image.width}x{image.height}"
+            except Exception:
+                pass
+
+
         # Build the sequence display name ONCE
         sequence_name = f"{basename}.[{start_frame}-{end_frame}]{extension}"
+        sequence_path = folder / sequence_name
 
         metadata = {
             # filename without folders
             "filename": sequence_name,
 
             # relative file path (no duplication)
-            "file_path": sequence_name,
+            "file_path": str(sequence_path),
 
             # size filled later (next task)
-            "file_size_mb": file_size_mb,
+            "file_size_bytes": total_bytes,
 
             "media_type": "video",
             "extension": extension,
-            "resolution_px": None,
+            "resolution_px": resolution_px,
             "duration_seconds": None,
             "sample_rate_hz": None,
             "mode": None,
@@ -108,7 +121,7 @@ def extract_metadata(file_path):
         raise ValueError(f"{file_path} is not a valid file")
 
     file_size_bytes = file_path.stat().st_size
-    file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
+    #file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
 
     
     # DEBUG: confirm whether ffmpeg is visible to Python
@@ -121,7 +134,7 @@ def extract_metadata(file_path):
     #Default metadata
     metadata = {
         "file_path": str(file_path),
-        "file_size_mb": file_size_mb,
+        "file_size_bytes": file_size_bytes,
         "media_type": "other",
         "extension": file_path.suffix.lower(),
         "resolution_px": None,

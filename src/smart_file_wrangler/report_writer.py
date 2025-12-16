@@ -100,7 +100,14 @@ def write_csv_report(data, output_path, root_folder):
             output_row["file_path"] = relative_path
             output_row["filename"] = filename
 
-            output_row = {k: output_row.get(k) for k in header}
+            # Convert file size to human-readable form
+            size_bytes = row.get("file_size_bytes")
+            if size_bytes is not None:
+                output_row["file_size"] = format_file_size(size_bytes) if size_bytes is not None else ""
+            else:
+                output_row["file_size"] = ""
+
+            output_row = {k: output_row.get(k, "") for k in header}
             writer.writerow(output_row)
 
     # Helpful success message
@@ -139,7 +146,7 @@ def write_folder_tree(root_path, output_path):
 def sort_report_items(data, root_folder):
     def sort_key(item):
         # relative path
-        rel_path = Path(item["file_path"])
+        rel_path = Path(make_relative_path(item.get("file_path", ""), root_folder))
 
         # folder depth (top-level first)
         depth = len(rel_path.parts) - 1
@@ -148,7 +155,11 @@ def sort_report_items(data, root_folder):
         parent = rel_path.parent.as_posix()
 
         # filename
-        filename = item.get("filename", "")
+        if item.get("frame_count"):
+            filename = make_sequence_filename(item)
+        else:
+            filename = Path(item.get("file_path", "")).name
+
 
         # media type order
         media_type = item.get("media_type", "other")
@@ -204,6 +215,30 @@ def generate_reports(
             input_folder,
             Path(output_dir) / "folder_tree.txt"
         )
+
+
+
+def format_file_size(bytes_value):
+
+    if bytes_value is None:
+        return ""
+    
+    bytes_value = int(bytes_value)
+
+    if bytes_value < 1024:
+        return f"{bytes_value} B"
+
+    kb = bytes_value / 1024
+    if kb < 1024:
+        return f"{kb:.1f} KB"
+
+    mb = kb / 1024
+    if mb < 1024:
+        return f"{mb:.2f} MB"
+
+    gb = mb / 1024
+    return f"{gb:.2f} GB"
+
 
 
 

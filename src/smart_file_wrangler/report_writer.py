@@ -114,17 +114,60 @@ def write_csv_report(data, output_path, root_folder):
     print(f'CSV report written: "{output_path}" ({len(data)} rows)')
 
 
-def write_json_report(data, output_path, fields):
+def write_json_report(data, output_path, root_folder):
+    """
+    Write report data to a JSON file.
+
+    Matches CSV output:
+    - filename field
+    - relative file_path
+    - human-readable file_size
+    """
+    import json
+    from .config import Defaults
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    filtered = [
-        {field: item.get(field) for field in fields}
-        for item in data
-    ]
+    output_rows = []
+
+    for row in data:
+        original_path = row.get("file_path", "")
+        relative_path = make_relative_path(original_path, root_folder)
+
+        # filename
+        if row.get("frame_count"):
+            filename = make_sequence_filename(row)
+        else:
+            filename = Path(original_path).name if original_path else ""
+
+        output_row = dict(row)
+
+        # replace fields for output
+        output_row["filename"] = filename
+        output_row["file_path"] = relative_path
+
+        # format size
+        size_bytes = row.get("file_size_bytes")
+        output_row["file_size"] = format_file_size(size_bytes)
+
+        # remove raw bytes (JSON should be clean)
+        output_row.pop("file_size_bytes", None)
+
+        # filter fields according to config
+        filtered = {
+            k: output_row.get(k)
+            for k in ["filename"] + Defaults["metadata_fields"]
+            if k in output_row
+        }
+
+        output_rows.append(filtered)
 
     with output_path.open("w", encoding="utf-8") as f:
-        json.dump(filtered, f, indent=2)
+        json.dump(output_rows, f, indent=2)
+
+    print(f'JSON report written: "{output_path}" ({len(output_rows)} items)')
+
 
 
 def write_folder_tree(root_path, output_path):
@@ -207,7 +250,7 @@ def generate_reports(
         write_json_report(
             sorted_data,
             Path(output_dir) / "report.json",
-            fields
+            root_folder=input_folder
         )
 
     if tree_enabled:

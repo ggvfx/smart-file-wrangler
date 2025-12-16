@@ -18,7 +18,7 @@ Defaults = {
     "verbose": True,
     "expand_log": False,
     "output_csv": True,
-    "output_json": False,
+    "output_json": True,
     "output_text": False,
     "metadata_sort_by": "name",
     "include_media_types": {
@@ -50,7 +50,7 @@ Defaults = {
     "default_unsorted_folder": "unsorted",  # Folder for unmatched files
     # Reporting
     "output_csv": True,
-    "output_json": False,
+    "output_json": True,
     "output_tree": False,
 
     "report_output_dir": None,  # None = same folder as input

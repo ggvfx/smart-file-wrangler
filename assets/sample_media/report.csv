@@ -1,5 +1,5 @@
 filename,file_path,file_size,media_type,extension,resolution_px,duration_seconds,sample_rate_hz,mode,format,frame_count,middle_frame_number,start_frame,end_frame
-report.csv,report.csv,2.3 KB,other,.csv,,,,,,,,,
+report.csv,report.csv,2.4 KB,other,.csv,,,,,,,,,
 sample-epub.epub,sample-epub.epub,1.9 KB,other,.epub,,,,,,,,,
 sample-excel.xls,sample-excel.xls,5.5 KB,other,.xls,,,,,,,,,
 sample-excel.xlsx,sample-excel.xlsx,4.6 KB,other,.xlsx,,,,,,,,,

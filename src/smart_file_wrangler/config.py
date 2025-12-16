@@ -51,7 +51,7 @@ Defaults = {
     # Reporting
     "output_csv": True,
     "output_json": True,
-    "output_tree": False,
+    "output_tree": True,
 
     "report_output_dir": None,  # None = same folder as input
 

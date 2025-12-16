@@ -9,6 +9,7 @@ import csv
 import json
 from pathlib import Path
 from .config import Defaults
+from collections import defaultdict
 
 media_type_order = {
     "video": 0,
@@ -63,7 +64,6 @@ def write_csv_report(data, output_path, root_folder):
     - Converts file_path to a relative path from root_folder
     - Uses Defaults["metadata_fields"] to decide what fields to include (except filename)
     """
-    from .config import Defaults
 
     output_path = Path(output_path)
 
@@ -123,8 +123,6 @@ def write_json_report(data, output_path, root_folder):
     - relative file_path
     - human-readable file_size
     """
-    import json
-    from .config import Defaults
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -169,21 +167,72 @@ def write_json_report(data, output_path, root_folder):
     print(f'JSON report written: "{output_path}" ({len(output_rows)} items)')
 
 
+def build_tree(items):
+    """
+    Build a nested dict representing folder structure.
+    """
+    tree = defaultdict(dict)
 
-def write_folder_tree(root_path, output_path):
-    root_path = Path(root_path)
+    for item in items:
+        path = Path(item["file_path"])
+        parts = path.parts
+
+        current = tree
+        for part in parts[:-1]:
+            current = current.setdefault(part, {})
+
+        # file or sequence filename
+        current[parts[-1]] = None
+
+    return tree
+
+def write_tree_lines(tree, indent=""):
+    lines = []
+
+    entries = sorted(tree.items())
+
+    for i, (name, subtree) in enumerate(entries):
+        is_last = i == len(entries) - 1
+        branch = "└─ " if is_last else "├─ "
+        lines.append(f"{indent}{branch}{name}")
+
+        if isinstance(subtree, dict):
+            extension = "   " if is_last else "│  "
+            lines.extend(write_tree_lines(subtree, indent + extension))
+
+    return lines
+
+
+def write_folder_tree(items, output_path, root_folder):
+
+    """
+    Write a text-based folder tree.
+    """
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    lines = []
+    root_folder = Path(root_folder)
+    root_name = root_folder.name
 
-    for path in sorted(root_path.rglob("*")):
-        indent = "│   " * (len(path.relative_to(root_path).parts) - 1)
-        prefix = "├─ "
-        lines.append(f"{indent}{prefix}{path.name}")
 
-    with output_path.open("w", encoding="utf-8") as file:
-        file.write("\n".join(lines))
+    relative_items = []
+    for item in items:
+        new_item = dict(item)
+        new_item["file_path"] = str(
+            Path(item["file_path"]).relative_to(root_folder)
+        )
+        relative_items.append(new_item)
+
+    tree = build_tree(relative_items)
+    lines = write_tree_lines(tree)
+    lines = [root_name] + lines
+
+
+    with output_path.open("w", encoding="utf-8") as tree_file:
+        for line in lines:
+            tree_file.write(line + "\n")
+
+    print(f'Folder tree written: "{output_path}"')
 
 
 def sort_report_items(data, root_folder):
@@ -255,9 +304,11 @@ def generate_reports(
 
     if tree_enabled:
         write_folder_tree(
-            input_folder,
-            Path(output_dir) / "folder_tree.txt"
+            sorted_data,
+            Path(output_dir) / "folder_tree.txt",
+            root_folder=input_folder
         )
+
 
 
 

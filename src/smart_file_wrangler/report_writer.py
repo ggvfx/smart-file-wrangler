@@ -34,31 +34,15 @@ def make_relative_path(path_string, root_folder):
 
 def make_sequence_filename(metadata):
     """
-    Build a friendly filename for frame sequences like:
-    sample-frameSeq.[1000-1005].png
+    Return the filename for reporting.
+
+    For frame sequences, the filename is already fully constructed
+    in metadata_reader.py and stored in metadata["filename"].
+
+    For normal files, this is just the filename.
     """
-    frame_count = metadata.get("frame_count")
-    middle_frame = metadata.get("middle_frame_number")
-    ext = metadata.get("extension", "")
-    start_frame = metadata.get("start_frame")
-    end_frame = metadata.get("end_frame")
-    base_name = Path(metadata.get("file_path", "")).name
+    return metadata.get("filename", "")
 
-    if start_frame is not None and end_frame is not None:
-        return f"{base_name}.[{start_frame}-{end_frame}]{ext}"
-
-
-    # If we don't have sequence info, fall back to the basename of file_path
-    file_path = metadata.get("file_path", "")
-    base_name = Path(file_path).name if file_path else "sequence"
-
-    # If we have frame_count and middle_frame, try to infer range from file_path if possible
-    # (Better: later we can pass frames start/end explicitly)
-    # For now: keep it simple and readable.
-    if frame_count and middle_frame:
-        return f"{base_name}.[seq]{ext}"
-
-    return f"{base_name}{ext}"
 
 
 def sort_metadata(data, sort_by=None, reverse=False):

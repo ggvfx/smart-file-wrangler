@@ -50,23 +50,54 @@ def extract_metadata(file_path):
 
     # 1) FRAME SEQUENCES FIRST
     if isinstance(file_path, dict) and "frames" in file_path:
+
+        total_bytes = 0
+
         frames = file_path["frames"]
+        folder = file_path["folder"]
+        basename = file_path["basename"]
+        extension = file_path["ext"]
+        separator = file_path.get("separator", ".")
+
+        for frame in frames:
+            frame_path = folder / f"{basename}{separator}{frame}{extension}"
+            if frame_path.exists():
+                total_bytes += frame_path.stat().st_size
+
+        file_size_mb = round(total_bytes / (1024 * 1024), 2)
+        
+        start_frame = frames[0]
+        end_frame = frames[-1]
+        middle_frame = frames[len(frames) // 2]
+
+        # Build the sequence display name ONCE
+        sequence_name = f"{basename}.[{start_frame}-{end_frame}]{extension}"
 
         metadata = {
-            "file_path": f"{file_path['basename']}.[{frames[0]}-{frames[-1]}]{file_path['ext']}",
-            "file_size_mb": None,
+            # filename without folders
+            "filename": sequence_name,
+
+            # relative file path (no duplication)
+            "file_path": sequence_name,
+
+            # size filled later (next task)
+            "file_size_mb": file_size_mb,
+
             "media_type": "video",
-            "extension": file_path["ext"],
+            "extension": extension,
             "resolution_px": None,
             "duration_seconds": None,
             "sample_rate_hz": None,
             "mode": None,
             "format": None,
+
+            # sequence-specific fields
             "frame_count": len(frames),
-            "middle_frame_number": frames[len(frames) // 2],
-            "start_frame": frames[0],
-            "end_frame": frames[-1],
+            "middle_frame_number": middle_frame,
+            "start_frame": start_frame,
+            "end_frame": end_frame,
         }
+
         return metadata
 
 

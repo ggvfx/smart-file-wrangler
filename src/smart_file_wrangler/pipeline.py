@@ -81,6 +81,7 @@ def run_pipeline(folder_path):
             csv_enabled=Defaults.get("output_csv"),
             json_enabled=Defaults.get("output_json"),
             tree_enabled=Defaults.get("output_tree"),
+            excel_enabled=Defaults.get("output_excel"),
         )
 
 

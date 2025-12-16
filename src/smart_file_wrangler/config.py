@@ -20,6 +20,7 @@ Defaults = {
     "output_csv": True,
     "output_json": True,
     "output_text": False,
+    "output_excel": True,
     "metadata_sort_by": "name",
     "include_media_types": {
         "image": True,

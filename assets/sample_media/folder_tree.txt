@@ -1,0 +1,28 @@
+sample_media
+├─ sample-epub.epub
+├─ sample-excel.xls
+├─ sample-excel.xlsx
+├─ sample-frameSeq.[1000-1005].png
+├─ sample-green-400x300.jpg
+├─ sample-text.txt
+├─ sample_audio-9s.wav
+├─ sample_video-5s.mp4
+├─ subfolder_1
+│  ├─ sample-markdown.md
+│  ├─ sample-open-spreadsheet.ods
+│  ├─ sample-openDoc.odt
+│  ├─ sample-pdf.pdf
+│  ├─ sample-pdfspreadsheet.pdf
+│  ├─ sample-richText.rtf
+│  ├─ sample-river-400x300.svg
+│  └─ sample-tabsep-spreadsheet.tsv
+└─ subfolder_2
+   ├─ sample-animated-200x200.gif
+   ├─ sample-blue-200x200.jpg
+   ├─ sample-blue-400x300.png
+   ├─ sample-bumblebee-400x300.png
+   ├─ sample-city-park-400x300.jpg
+   ├─ sample-commasep-spreadsheet.csv
+   ├─ sample-frameSeq2.[1000-1005].png
+   ├─ sample-word.docx
+   └─ sample-zip.zip

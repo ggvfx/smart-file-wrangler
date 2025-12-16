@@ -10,6 +10,10 @@ import json
 from pathlib import Path
 from .config import Defaults
 from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.utils import get_column_letter
+
+
 
 media_type_order = {
     "video": 0,
@@ -235,6 +239,68 @@ def write_folder_tree(items, output_path, root_folder):
     print(f'Folder tree written: "{output_path}"')
 
 
+def write_excel_report(data, output_path, root_folder):
+    """
+    Write report data to an Excel (.xlsx) file.
+    Mirrors CSV/JSON output:
+    - filename first
+    - file_path is relative
+    - file_size is human readable (KB/MB/GB)
+    """
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Report"
+
+    # Build column order from config
+    selected_fields = list(Defaults.get("metadata_fields", []))
+
+    # Ensure file_path exists in selected fields
+    if "file_path" not in selected_fields:
+        selected_fields.insert(0, "file_path")
+
+    # Swap raw bytes field to friendly output field
+    selected_fields = ["file_size" if f == "file_size_bytes" else f for f in selected_fields]
+
+    # filename always first
+    header = ["filename"] + [f for f in selected_fields if f != "filename"]
+    sheet.append(header)
+
+    for row in data:
+        original_path = row.get("file_path", "")
+        relative_path = make_relative_path(original_path, root_folder)
+
+        # filename
+        if row.get("frame_count"):
+            filename = make_sequence_filename(row)
+        else:
+            filename = Path(original_path).name if original_path else ""
+
+        output_row = dict(row)
+        output_row["filename"] = filename
+        output_row["file_path"] = relative_path
+
+        # human readable size (matches CSV/JSON)
+        size_bytes = row.get("file_size_bytes")
+        output_row["file_size"] = format_file_size(size_bytes)
+
+        # write row in correct column order
+        sheet.append([output_row.get(col, "") for col in header])
+
+    # Auto-size columns
+    for col_index, column in enumerate(sheet.columns, start=1):
+        max_length = 0
+        for cell in column:
+            if cell.value is not None:
+                max_length = max(max_length, len(str(cell.value)))
+        sheet.column_dimensions[get_column_letter(col_index)].width = max_length + 2
+
+    workbook.save(output_path)
+    print(f'Excel report written: "{output_path}" ({len(data)} rows)')
+
+
 def sort_report_items(data, root_folder):
     def sort_key(item):
         # relative path
@@ -283,6 +349,7 @@ def generate_reports(
     csv_enabled=False,
     json_enabled=False,
     tree_enabled=False,
+    excel_enabled=False,
 ):
     #sorted_data = sort_metadata(metadata, sort_by, reverse)
     sorted_data = sort_report_items(metadata, input_folder)
@@ -308,6 +375,14 @@ def generate_reports(
             Path(output_dir) / "folder_tree.txt",
             root_folder=input_folder
         )
+
+    if excel_enabled:
+        write_excel_report(
+            sorted_data,
+            Path(output_dir) / "report.xlsx",
+            root_folder=input_folder
+        )
+
 
 
 

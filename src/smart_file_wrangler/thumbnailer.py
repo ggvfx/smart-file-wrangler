@@ -20,6 +20,7 @@ from .config import Defaults
 from .file_scanner import scan_folder
 import subprocess
 import re
+from .logger import log
 
 frame_pattern = re.compile(r".+[._-]\d+(\.[^.]+)$")
 
@@ -57,7 +58,8 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
             else:
                 print(f"Skipping video thumbnail for {file_path.name}: ffmpeg not available")
     else:
-        print(f"Skipping {file_path.name}: unsupported file type")
+        if Defaults.get("verbose"):
+            log(f"Skipping {file_path.name}: unsupported file type")
 
 
 def create_image_thumbnail(file_path, out_path, size):

@@ -16,9 +16,10 @@ from .file_scanner import scan_folder
 from .metadata_reader import extract_metadata
 from .config import Defaults
 from .utils import group_frame_sequences
+from .logger import init_logger
 
 
-def organise_files(folder_path, output_dir=None, move_files=None, mode="extension", rules=None, default_folder="unsorted"):
+def organise_files(folder_path, output_dir=None, move_files=None, mode="extension", rules=None, default_folder="unsorted", ignore_thumbnails=False):
     """
     Process files in a folder into structured subfolders.
 
@@ -48,7 +49,7 @@ def organise_files(folder_path, output_dir=None, move_files=None, mode="extensio
         move_files = Defaults["move_files"]
 
     #Scan all files in folder (recursively if enabled)
-    file_list = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"])
+    file_list = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"], ignore_thumbnails=ignore_thumbnails)
 
     #Optionally combine frame sequences into single items
     if Defaults.get("combine_frame_seq", True):

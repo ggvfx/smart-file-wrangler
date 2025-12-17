@@ -2,7 +2,7 @@
 report_writer.py
 Generates CSV/JSON reports or folder tree output.
 Can be used independently (report-only workflow).
-“Fields may be empty if metadata could not be extracted.”
+Fields may be empty if metadata could not be extracted.
 """
 
 import csv
@@ -220,12 +220,20 @@ def write_folder_tree(items, output_path, root_folder):
 
 
     relative_items = []
+
+    thumb_folder = Defaults["thumb_folder_name"]
+
     for item in items:
+        relative_path = Path(item["file_path"]).relative_to(root_folder)
+
+        # SKIP thumbnails folder entirely
+        if thumb_folder in relative_path.parts:
+            continue
+
         new_item = dict(item)
-        new_item["file_path"] = str(
-            Path(item["file_path"]).relative_to(root_folder)
-        )
+        new_item["file_path"] = str(relative_path)
         relative_items.append(new_item)
+
 
     tree = build_tree(relative_items)
     lines = write_tree_lines(tree)

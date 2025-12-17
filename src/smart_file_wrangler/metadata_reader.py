@@ -63,8 +63,6 @@ def extract_metadata(file_path):
             frame_path = folder / f"{basename}{separator}{frame}{extension}"
             if frame_path.exists():
                 total_bytes += frame_path.stat().st_size
-
-        #file_size_mb = round(total_bytes / (1024 * 1024), 2)
         
         start_frame = frames[0]
         end_frame = frames[-1]
@@ -121,11 +119,6 @@ def extract_metadata(file_path):
         raise ValueError(f"{file_path} is not a valid file")
 
     file_size_bytes = file_path.stat().st_size
-    #file_size_mb = round(file_size_bytes / (1024 * 1024), 2)
-
-    
-    # DEBUG: confirm whether ffmpeg is visible to Python
-    #print("ffmpeg available:", is_ffmpeg_available())
     
     extension = file_path.suffix.lower()
 

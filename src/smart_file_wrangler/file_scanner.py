@@ -8,7 +8,7 @@ from pathlib import Path
 from .config import Defaults  # import config to get global recurse setting
 from .utils import detect_frame_sequences
 
-def scan_folder(root_path, include_subfolders=None, file_types=None):
+def scan_folder(root_path, include_subfolders=None, file_types=None, ignore_thumbnails=False):
     """
     Return a list of file paths that match the given file types.
 
@@ -47,7 +47,11 @@ def scan_folder(root_path, include_subfolders=None, file_types=None):
         if not file_path.is_file():
             continue  # Skip directories
 
-        # Check if the file matches the requested types (or include all if None)
+        # Skip thumbnails folder if requested
+        if ignore_thumbnails and Defaults["thumb_folder_name"] in file_path.parts:
+            continue
+
+        # Check file type
         if file_types is None or file_path.suffix.lower().lstrip(".") in file_types:
             matched_files.append(file_path)
 

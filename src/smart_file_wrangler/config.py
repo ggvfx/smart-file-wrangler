@@ -9,6 +9,7 @@ Defaults = {
     "combine_frame_seq" : True,
     "generate_thumbnails": False,
     "enable_organiser": False,
+    "ignore_thumbnail_folders": True,
     "thumb_images": True,
     "thumb_videos": True,
     "thumb_size": 512,
@@ -17,10 +18,6 @@ Defaults = {
     "move_files": False,
     "verbose": True,
     "expand_log": False,
-    "output_csv": True,
-    "output_json": True,
-    "output_text": False,
-    "output_excel": True,
     "metadata_sort_by": "name",
     "include_media_types": {
         "image": True,
@@ -49,9 +46,11 @@ Defaults = {
     # Example: {"type": "contains", "value": "SEF"}
     ],
     "default_unsorted_folder": "unsorted",  # Folder for unmatched files
-    # Reporting
+
+    # Reporting outputs
     "output_csv": True,
     "output_json": True,
+    "output_excel": True,
     "output_tree": True,
 
     "report_output_dir": None,  # None = same folder as input

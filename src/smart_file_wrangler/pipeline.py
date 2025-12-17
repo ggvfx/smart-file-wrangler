@@ -31,14 +31,14 @@ from .report_writer import generate_reports
 def run_pipeline(folder_path):
     folder_path = Path(folder_path)
 
-    #Organiser
-    if Defaults.get("enable_organiser", True):
-        organise_files(folder_path)
+    organiser_ran = Defaults.get("enable_organiser", True)
+    scan_subfolders = Defaults["recurse_subfolders"] or organiser_ran
 
     #Thumbnails
     if Defaults.get("generate_thumbnails", False):
 
-        files = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"])
+        files = scan_folder(folder_path, include_subfolders=scan_subfolders, ignore_thumbnails=Defaults.get("ignore_thumbnail_folders", True),)
+
 
         if Defaults.get("combine_frame_seq", True):
             items = group_frame_sequences(files)
@@ -55,10 +55,15 @@ def run_pipeline(folder_path):
                 create_thumbnail(item)
 
 
+    #Organiser
+    if Defaults.get("enable_organiser", True):
+        organise_files(folder_path, ignore_thumbnails=Defaults.get("ignore_thumbnail_folders", True),)
+
+
     #Reports
     if Defaults.get("output_csv") or Defaults.get("output_json") or Defaults.get("output_tree"):
 
-        files = scan_folder(folder_path, include_subfolders=Defaults["recurse_subfolders"])
+        files = scan_folder(folder_path, include_subfolders=scan_subfolders, ignore_thumbnails=Defaults.get("ignore_thumbnail_folders", True))
 
         if Defaults.get("combine_frame_seq", True):
             report_items = group_frame_sequences(files)
@@ -80,9 +85,10 @@ def run_pipeline(folder_path):
             reverse=Defaults.get("metadata_sort_reverse", False),
             csv_enabled=Defaults.get("output_csv"),
             json_enabled=Defaults.get("output_json"),
-            tree_enabled=Defaults.get("output_tree"),
             excel_enabled=Defaults.get("output_excel"),
+            tree_enabled=Defaults.get("output_tree"),
         )
+
 
 
 

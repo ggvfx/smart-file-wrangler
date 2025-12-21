@@ -1,117 +1,225 @@
 """
 utils.py
+
 Shared helper functions for Smart File Wrangler.
+
+This module contains small, reusable utilities used across multiple parts
+of the application. These helpers are intentionally stateless, with the
+exception of a few functions that read default values from config.Defaults.
+
+NOTE:
+- Some helpers depend implicitly on Defaults from config.py.
+- This module currently mixes filesystem helpers, environment checks,
+  and media-domain utilities. This is intentional for now and flagged
+  as a future refactor opportunity.
 """
+
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
 
 from pathlib import Path
 import subprocess
-from .config import Defaults
 import re
 from collections import defaultdict
 
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
+
+from .config import Defaults
+
+
+# ----------------------------------------------------------------------
+# Media file extension groups
+# ----------------------------------------------------------------------
+# These lists define known media extensions and are used for basic
+# classification and filtering. They are not intended to be exhaustive.
+
+image_extensions = [
+    ".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",
+    ".exr", ".dpx", ".cin", ".tga", ".hdr", ".sgi", ".rgb"
+]
+
+video_extensions = [
+    ".mp4", ".mov", ".avi", ".mkv"
+]
+
+audio_extensions = [
+    ".wav", ".mp3", ".aac", ".flac"
+]
+
+
+# ----------------------------------------------------------------------
+# Filesystem helpers
+# ----------------------------------------------------------------------
 
 def ensure_directory(path):
-    """Create the directory if it doesn't exist."""
+    """
+    Ensure that a directory exists.
+
+    Args:
+        path (str or Path): Directory path to create if it does not exist.
+
+    This function is safe to call multiple times. If the directory already
+    exists, no action is taken.
+    """
     path = Path(path)
     if not path.exists():
         path.mkdir(parents=True, exist_ok=True)
 
 
-def is_ffmpeg_available():
+def get_thumbnail_path(
+    file_path: Path,
+    thumb_folder_name="thumbnails",
+    thumb_suffix="_thumb",
+    thumb_ext=".png"
+) -> Path:
     """
-    Check if ffmpeg or ffprobe is available on the system.
+    Generate the output path for a thumbnail corresponding to a media file.
+
+    Args:
+        file_path (Path): Path to the original media file.
+        thumb_folder_name (str): Folder name where thumbnails are stored.
+        thumb_suffix (str): Suffix appended to the original filename stem.
+        thumb_ext (str): Extension used for thumbnail files.
 
     Returns:
-        bool: True if ffmpeg or ffprobe can be run, False otherwise.
+        Path: Full path to the thumbnail file.
 
-    This function tries to run 'ffmpeg -version' and 'ffprobe -version'.
-    If either command succeeds, we assume ffmpeg is installed.
-    """
-    # try ffmpeg first
-    try:
-        # subprocess.run tries to execute the command
-        # capture_output=True prevents it from printing to the console
-        # text=True returns output as string
-        # check=True raises an error if the command fails
-        subprocess.run(["ffmpeg", "-version"], capture_output=True, text=True, check=True)
-        return True  # if this succeeds, ffmpeg is available
-    
-    except Exception:
-        # if ffmpeg fails, try ffprobe
-        try:
-            subprocess.run(["ffprobe", "-version"], capture_output=True, text=True, check=True)
-            return True  # ffprobe available
-        except Exception:
-            # neither ffmpeg nor ffprobe could be run
-            return False
-        
-
-# lists of supported file extensions
-image_extensions = [".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif",".exr", ".dpx", ".cin", ".tga", ".hdr", ".sgi", ".rgb"]
-
-video_extensions = [".mp4", ".mov", ".avi", ".mkv"]
-
-audio_extensions = [".wav", ".mp3", ".aac", ".flac"]
-
-
-def get_thumbnail_path(file_path: Path, thumb_folder_name="thumbnails", thumb_suffix="_thumb", thumb_ext=".png") -> Path:
-    """
-    Generate the path for a thumbnail based on the original file.
-
-    Parameters:
-        file_path (Path): Original file path
-        thumb_folder_name (str): Folder name where thumbnails will be stored
-        thumb_suffix (str): Suffix to append to the file stem
-        thumb_ext (str): Extension for the thumbnail file
-
-    Returns:
-        Path: Full path to the thumbnail
+    Notes:
+        - If thumb_folder_name or thumb_suffix is None, values are read from
+          config.Defaults.
+        - This creates an implicit dependency on Defaults, which is intentional
+          but should be kept in mind when reusing this function.
     """
     if thumb_folder_name is None:
         thumb_folder_name = Defaults["thumb_folder_name"]
     if thumb_suffix is None:
         thumb_suffix = Defaults["thumb_suffix"]
+
     thumb_dir = file_path.parent / thumb_folder_name
     thumb_name = f"{file_path.stem}{thumb_suffix}{thumb_ext}"
+
     return thumb_dir / thumb_name
 
 
+# ----------------------------------------------------------------------
+# Environment and dependency checks
+# ----------------------------------------------------------------------
+
+def is_ffmpeg_available():
+    """
+    Check whether ffmpeg or ffprobe is available on the system.
+
+    Returns:
+        bool: True if either ffmpeg or ffprobe can be executed, False otherwise.
+
+    This function attempts to run 'ffmpeg -version' and 'ffprobe -version'.
+    If either command succeeds, the function returns True.
+
+    Any exceptions raised by subprocess execution are caught internally,
+    and the function fails safely by returning False.
+    """
+    for command in ("ffmpeg", "ffprobe"):
+        try:
+            subprocess.run(
+                [command, "-version"],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            return True
+        except Exception:
+            continue
+
+    return False
+
+
+# ----------------------------------------------------------------------
+# Metadata helpers
+# ----------------------------------------------------------------------
+
 def filter_metadata(metadata: dict, fields: list = None) -> dict:
-    """Return only the keys specified in fields. If fields=None, return all."""
+    """
+    Filter a metadata dictionary to include only specified fields.
+
+    Args:
+        metadata (dict): Full metadata dictionary.
+        fields (list, optional): List of keys to retain. If None, defaults
+            to Defaults["metadata_fields"].
+
+    Returns:
+        dict: Filtered metadata dictionary containing only requested keys.
+
+    Notes:
+        - Missing keys are silently ignored.
+        - No validation of field names is performed.
+        - If fields is None, this function implicitly depends on Defaults.
+    """
     if fields is None:
         fields = Defaults["metadata_fields"]
-    return {k: v for k, v in metadata.items() if k in fields}
 
+    return {key: value for key, value in metadata.items() if key in fields}
+
+
+# ----------------------------------------------------------------------
+# Frame sequence detection
+# ----------------------------------------------------------------------
 
 def detect_frame_sequences(files, min_sequence_length=2):
     """
-    Detects frame sequences in a list of files.
+    Detect frame sequences in a list of file paths.
 
     Args:
-        files (list[Path or str]): List of file paths.
-        min_sequence_length (int): Minimum number of frames to consider a sequence.
+        files (list[Path or str]): List of file paths to analyse.
+        min_sequence_length (int): Minimum number of frames required to
+            consider a group a sequence.
 
     Returns:
-        list: Sequence dicts and standalone files.
-        Example:
-        [
-            {"basename": "shot01", "frames": [1001,1002,1003], "ext": ".exr", "folder": Path(...)},
-            Path("standalone_file.txt")
-        ]
+        list: A mixed list containing:
+            - dicts describing detected frame sequences
+            - Path objects for standalone files
+
+    Sequence dictionary format:
+        {
+            "basename": str,
+            "frames": list[int],
+            "ext": str,
+            "folder": Path,
+            "separator": str
+        }
+
+    Notes:
+        - Files that do not match a frame pattern are returned as Path objects.
+        - Short sequences (below min_sequence_length) are flattened back into
+          standalone files.
+        - This function performs grouping, validation, and output assembly
+          in one pass for simplicity.
     """
-    sequences = defaultdict(lambda: {"frames": [], "ext": None, "folder": None})
+    sequences = defaultdict(lambda: {
+        "frames": [],
+        "ext": None,
+        "folder": None,
+        "separator": None,
+    })
+
     standalone_files = []
 
-    # Regex to capture frame numbers with flexible separators before the number
+    # Regex captures:
+    #   base name, frame number, extension
+    # Allows separators like '.', '_', or '-'
     pattern = re.compile(r"(.+?)[._-](\d+)(\.[^.]+)$")
 
     for file_path in files:
         path = Path(file_path)
         match = pattern.match(path.name)
+
         if match:
             base, frame_str, ext = match.groups()
             separator = path.name[len(base)]
             frame_num = int(frame_str)
+
             key = (path.parent, base, ext)
             sequences[key]["frames"].append(frame_num)
             sequences[key]["ext"] = ext
@@ -120,37 +228,52 @@ def detect_frame_sequences(files, min_sequence_length=2):
         else:
             standalone_files.append(path)
 
-    # Build final list, filter sequences by min length
     result = []
+
     for (folder, base, ext), seq in sequences.items():
         frames = sorted(seq["frames"])
+
         if len(frames) >= min_sequence_length:
             result.append({
                 "basename": base,
                 "frames": frames,
                 "ext": ext,
                 "folder": folder,
-                "separator": seq.get("separator", ".")
+                "separator": seq.get("separator", "."),
             })
         else:
             # Treat short sequences as individual files
             for frame in frames:
-                # Attempt to detect the original separator before the frame number
-                sep_match = re.search(r"(.+?)([._-])\d+(\.[^.]+)$", str(folder / f"{base}{ext}"))
-    
+                sep_match = re.search(
+                    r"(.+?)([._-])\d+(\.[^.]+)$",
+                    str(folder / f"{base}{ext}")
+                )
+
                 if sep_match:
                     separator = sep_match.group(2)
                 else:
                     separator = "."
-                    print(f"Warning: could not detect separator for frame sequence '{base}' in folder '{folder}', defaulting to '{separator}'.")
+                    # NOTE: This print is intentionally left as-is.
+                    # It should eventually be replaced by logger.py.
+                    print(
+                        f"Warning: could not detect separator for frame sequence "
+                        f"'{base}' in folder '{folder}', defaulting to '{separator}'."
+                    )
 
                 filename = folder / f"{base}{separator}{frame}{ext}"
                 standalone_files.append(filename)
 
-    # Combine sequences + standalone files
     return result + standalone_files
 
-def group_frame_sequences(files, min_sequence_length=2):
-    """Wrapper to match organiser.py naming."""
-    return detect_frame_sequences(files, min_sequence_length=min_sequence_length)
 
+def group_frame_sequences(files, min_sequence_length=2):
+    """
+    Alias for detect_frame_sequences.
+
+    This wrapper exists to preserve naming compatibility with organiser.py
+    and other modules that expect this function name.
+    """
+    return detect_frame_sequences(
+        files,
+        min_sequence_length=min_sequence_length
+    )

@@ -1,57 +1,115 @@
 """
 metadata_reader.py
-Extracts metadata such as duration, resolution, file size, etc.
+
+Extracts raw metadata from files and frame sequences.
+
+This module is responsible only for reading metadata from files.
+It does not format, filter, sort, or output metadata for reports.
 """
 
 from pathlib import Path
-from PIL import Image
 import subprocess
 import json
-from .utils import is_ffmpeg_available, image_extensions, video_extensions, audio_extensions
+
+from PIL import Image
+
+from .utils import (
+    is_ffmpeg_available,
+    image_extensions,
+    video_extensions,
+    audio_extensions,
+)
 from .file_scanner import scan_folder
 from .config import Defaults
 
 
-# helper for video/audio files if ffmpeg is available
+# ----------------------------------------------------------------------
+# Internal helpers
+# ----------------------------------------------------------------------
+
 def _populate_ffprobe_metadata(file_path, metadata):
-    # build ffprobe command
-    command = ["ffprobe", "-v", "error", "-print_format", "json", "-show_streams", "-show_format", str(file_path)]
+    """
+    Populate metadata fields using ffprobe for audio/video files.
+
+    This helper mutates the metadata dictionary in place.
+    If ffprobe fails for any reason, metadata is left unchanged.
+
+    Fields that may be populated:
+        - resolution_px
+        - duration_seconds
+        - sample_rate_hz
+    """
+    command = [
+        "ffprobe",
+        "-v", "error",
+        "-print_format", "json",
+        "-show_streams",
+        "-show_format",
+        str(file_path),
+    ]
+
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
         data = json.loads(result.stdout)
     except Exception:
-        return  # leave metadata as None if ffprobe fails
+        # Fail silently and leave metadata unchanged
+        return
 
     for stream in data.get("streams", []):
         if "width" in stream and "height" in stream:
-            width = int(stream["width"])
-            height = int(stream["height"])
-            metadata["resolution_px"] = f"{width}x{height}"
+            try:
+                width = int(stream["width"])
+                height = int(stream["height"])
+                metadata["resolution_px"] = f"{width}x{height}"
+            except Exception:
+                pass
 
         if "duration" in stream and metadata["duration_seconds"] is None:
             try:
                 metadata["duration_seconds"] = float(stream["duration"])
-            except ValueError:
+            except Exception:
                 pass
+
         if "sample_rate" in stream and metadata["sample_rate_hz"] is None:
             try:
                 metadata["sample_rate_hz"] = int(stream["sample_rate"])
-            except ValueError:
+            except Exception:
                 pass
 
 
-#Main function
+# ----------------------------------------------------------------------
+# Public API
+# ----------------------------------------------------------------------
+
 def extract_metadata(file_path):
     """
-    Return a dictionary of metadata for the given file.
+    Extract raw metadata for a single file or frame sequence.
 
-    Video and audio metadata is only extracted if ffmpeg/ffprobe is available.
+    Args:
+        file_path (Path | dict):
+            - Path: a normal file on disk
+            - dict: a frame sequence dictionary produced by utils.detect_frame_sequences
+
+    Returns:
+        dict: Raw metadata dictionary.
+
+    Notes:
+        - This function performs no formatting or filtering.
+        - Frame sequences are treated as a single logical item.
+        - Video/audio metadata is only extracted if ffmpeg/ffprobe is available.
     """
 
-    # 1) FRAME SEQUENCES FIRST
+    # ------------------------------------------------------------------
+    # 1) FRAME SEQUENCES
+    # ------------------------------------------------------------------
+    # Frame sequences are passed in as dictionaries with frame information.
+    # These are treated as a single logical media item.
     if isinstance(file_path, dict) and "frames" in file_path:
-
-        total_bytes = 0
 
         frames = file_path["frames"]
         folder = file_path["folder"]
@@ -59,18 +117,19 @@ def extract_metadata(file_path):
         extension = file_path["ext"]
         separator = file_path.get("separator", ".")
 
+        total_bytes = 0
+
         for frame in frames:
             frame_path = folder / f"{basename}{separator}{frame}{extension}"
             if frame_path.exists():
                 total_bytes += frame_path.stat().st_size
-        
+
         start_frame = frames[0]
         end_frame = frames[-1]
         middle_frame = frames[len(frames) // 2]
 
-        # Frame seq resolution
-        middle_frame_path = folder / f"{basename}{separator}{middle_frame}{extension}"
         resolution_px = None
+        middle_frame_path = folder / f"{basename}{separator}{middle_frame}{extension}"
 
         if middle_frame_path.exists():
             try:
@@ -79,21 +138,14 @@ def extract_metadata(file_path):
             except Exception:
                 pass
 
-
-        # Build the sequence display name ONCE
+        # Construct a display-style sequence name once
         sequence_name = f"{basename}.[{start_frame}-{end_frame}]{extension}"
         sequence_path = folder / sequence_name
 
         metadata = {
-            # filename without folders
             "filename": sequence_name,
-
-            # relative file path (no duplication)
             "file_path": str(sequence_path),
-
-            # size filled later (next task)
             "file_size_bytes": total_bytes,
-
             "media_type": "video",
             "extension": extension,
             "resolution_px": resolution_px,
@@ -101,8 +153,6 @@ def extract_metadata(file_path):
             "sample_rate_hz": None,
             "mode": None,
             "format": None,
-
-            # sequence-specific fields
             "frame_count": len(frames),
             "middle_frame_number": middle_frame,
             "start_frame": start_frame,
@@ -111,25 +161,24 @@ def extract_metadata(file_path):
 
         return metadata
 
-
+    # ------------------------------------------------------------------
     # 2) NORMAL FILES
+    # ------------------------------------------------------------------
+
     file_path = Path(file_path)
 
     if not file_path.is_file():
         raise ValueError(f"{file_path} is not a valid file")
 
     file_size_bytes = file_path.stat().st_size
-    
     extension = file_path.suffix.lower()
 
-
-
-    #Default metadata
+    # Base metadata shared by all file types
     metadata = {
         "file_path": str(file_path),
         "file_size_bytes": file_size_bytes,
         "media_type": "other",
-        "extension": file_path.suffix.lower(),
+        "extension": extension,
         "resolution_px": None,
         "duration_seconds": None,
         "sample_rate_hz": None,
@@ -137,7 +186,9 @@ def extract_metadata(file_path):
         "format": None,
     }
 
-    #Images
+    # ------------------------------------------------------------------
+    # IMAGE FILES
+    # ------------------------------------------------------------------
     if extension in image_extensions:
         metadata["media_type"] = "image"
         try:
@@ -146,75 +197,83 @@ def extract_metadata(file_path):
                 metadata["format"] = image.format
                 metadata["mode"] = image.mode
         except Exception:
-            pass  # some formats may not be readable by Pillow
+            # Some image formats may not be readable by Pillow
+            pass
 
-    #Videos
+    # ------------------------------------------------------------------
+    # VIDEO FILES
+    # ------------------------------------------------------------------
     elif extension in video_extensions:
         metadata["media_type"] = "video"
-        # only call ffprobe if it is available
         if is_ffmpeg_available():
             _populate_ffprobe_metadata(file_path, metadata)
 
-    #Audio
+    # ------------------------------------------------------------------
+    # AUDIO FILES
+    # ------------------------------------------------------------------
     elif extension in audio_extensions:
         metadata["media_type"] = "audio"
         if is_ffmpeg_available():
             _populate_ffprobe_metadata(file_path, metadata)
 
-    # other file types will still have file_size and extension
     return metadata
 
-# Extract metadata for all files in a folder
+
 def extract_metadata_for_folder(folder_path):
     """
-    Generate metadata dictionaries for all supported files in a folder
-    (and optionally subfolders based on Defaults["recurse_subfolders"]).
+    Extract metadata for all supported files in a folder.
+
+    This function:
+        - Scans the folder using scan_folder()
+        - Extracts raw metadata for each file
+        - Applies media-type inclusion rules from Defaults
+        - Filters metadata fields based on Defaults["metadata_fields"]
+
+    Args:
+        folder_path (str | Path): Folder to scan.
 
     Returns:
-        list[dict]: List of metadata dictionaries.
+        list[dict]: List of filtered metadata dictionaries.
     """
     folder_path = Path(folder_path)
+
     if not folder_path.is_dir():
         raise ValueError(f"{folder_path} is not a valid directory")
 
-    # Use scan_folder to respect config for recursion
     files = scan_folder(
         folder_path,
         include_subfolders=Defaults["recurse_subfolders"],
-        file_types=None
+        file_types=None,
     )
 
-    all_file_metadata = []  # This will store metadata for every file
+    all_file_metadata = []
 
     for current_file in files:
-        # Extract full metadata for this file
         file_metadata = extract_metadata(current_file)
 
         media_type = file_metadata["media_type"]
         if not Defaults["include_media_types"].get(media_type, False):
-            continue  # skip this file entirely
+            continue
 
-        # Keep only the metadata fields that the user wants (from Defaults)
+        # Filter metadata fields based on user configuration
         filtered_metadata = {}
         for key, value in file_metadata.items():
             if key in Defaults["metadata_fields"]:
                 filtered_metadata[key] = value
 
-        #DEBUG
-        #filtered_metadata["file_path"] = str(current_file)
-
-        # Add the filtered metadata for this file to the main list
         all_file_metadata.append(filtered_metadata)
 
-    # Return the list containing metadata for all files
     return all_file_metadata
 
-# quick test
+
+# ----------------------------------------------------------------------
+# Manual testing
+# ----------------------------------------------------------------------
+
 if __name__ == "__main__":
     here = Path(__file__).resolve().parent
     sample_folder = here.parent.parent / "assets" / "sample_media"
 
-    # Test metadata extraction for individual files
     print("\n--- Single file metadata test ---")
     for current_file in sample_folder.iterdir():
         if current_file.is_file():
@@ -223,13 +282,11 @@ if __name__ == "__main__":
             for key, value in current_file_metadata.items():
                 print(f"{key} : {value}")
 
-    # Test metadata extraction for the whole folder
     print("\n--- Folder metadata extraction test ---")
     all_files_metadata = extract_metadata_for_folder(sample_folder)
     for file_metadata in all_files_metadata:
         print(file_metadata)
 
-    #Metadata for frame sequences
     from .utils import group_frame_sequences
 
     print("\n--- Frame sequence metadata test ---")

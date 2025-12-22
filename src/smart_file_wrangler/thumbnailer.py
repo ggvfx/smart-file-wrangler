@@ -26,7 +26,7 @@ from .utils import (
     video_extensions,
     get_thumbnail_path,
 )
-from .config import Defaults
+from .config import Defaults, Config
 from .file_scanner import scan_folder
 from .logger import log
 
@@ -44,7 +44,7 @@ frame_pattern = re.compile(r".+[._-]\d+(\.[^.]+)$")
 # Public API
 # ----------------------------------------------------------------------
 
-def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
+def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=None):
     """
     Create a thumbnail for a single file.
 
@@ -56,19 +56,27 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
         out_path (Path | None): Output thumbnail path.
             If None, the path is derived using get_thumbnail_path().
         size (int | None): Maximum thumbnail dimension in pixels.
-            If None, Defaults["thumb_size"] is used.
+            If None, config.thumb_size is used.
         codec (str): Video output codec (currently unused, preserved for API stability).
     """
-    file_path = Path(file_path)
+    if config is None:
+        raise ValueError(
+            "create_thumbnail() now requires a Config object. "
+            "Pipeline must pass config explicitly."
+        )
 
     if size is None:
-        size = Defaults["thumb_size"]
+        size = config.thumb_size
+
+    verbose = config.verbose
+
+    file_path = Path(file_path)
 
     if out_path is None:
         out_path = get_thumbnail_path(
             file_path,
-            thumb_folder_name=Defaults["thumb_folder_name"],
-            thumb_suffix=Defaults["thumb_suffix"],
+            thumb_folder_name=config.thumb_folder_name,
+            thumb_suffix=config.thumb_suffix,
         )
 
     if not file_path.is_file():
@@ -80,16 +88,16 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
     # IMAGE FILES
     # ------------------------------------------------------------------
     if extension in image_extensions:
-        if Defaults["thumb_images"]:
-            create_image_thumbnail(file_path, out_path, size)
+        if config.thumb_images:
+            _create_image_thumbnail(file_path, out_path, size)
 
     # ------------------------------------------------------------------
     # VIDEO FILES
     # ------------------------------------------------------------------
     elif extension in video_extensions:
-        if Defaults["thumb_videos"]:
+        if config.thumb_videos:
             if is_ffmpeg_available():
-                create_video_thumbnail(file_path, out_path, size, codec)
+                _create_video_thumbnail(file_path, out_path, size, codec)
             else:
                 # External dependency missing; skip safely
                 print(
@@ -101,7 +109,7 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
     # UNSUPPORTED FILE TYPES
     # ------------------------------------------------------------------
     else:
-        if Defaults.get("verbose"):
+        if verbose:
             log(f"Skipping {file_path.name}: unsupported file type")
 
 
@@ -109,7 +117,7 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4"):
 # Image thumbnail generation
 # ----------------------------------------------------------------------
 
-def create_image_thumbnail(file_path, out_path, size):
+def _create_image_thumbnail(file_path, out_path, size):
     """
     Create a thumbnail for an image file using Pillow.
 
@@ -146,7 +154,7 @@ def create_image_thumbnail(file_path, out_path, size):
 # Video thumbnail generation
 # ----------------------------------------------------------------------
 
-def create_video_thumbnail(file_path, out_path, size, codec):
+def _create_video_thumbnail(file_path, out_path, size, codec):
     """
     Create a thumbnail for a video file using ffmpeg.
 
@@ -184,57 +192,18 @@ def create_video_thumbnail(file_path, out_path, size, codec):
 # Folder-level helpers
 # ----------------------------------------------------------------------
 
-def generate_thumbnails_for_folder(folder_path, size=None, codec="mp4"):
-    """
-    Generate thumbnails for all supported files in a folder.
-
-    This function:
-    - Scans the folder using scan_folder()
-    - Respects recursion settings from Defaults
-    - Skips individual frame sequence members
-    - Respects Defaults["thumb_images"] and Defaults["thumb_videos"]
-    """
-    folder_path = Path(folder_path)
-
-    if not folder_path.is_dir():
-        raise ValueError(f"{folder_path} is not a valid directory")
-
-    # Scan folder using configuration defaults
-    files = scan_folder(folder_path)
-
-    for file_path in files:
-        # Skip individual frame sequence members
-        if frame_pattern.match(file_path.name):
-            continue
-
-        ext = file_path.suffix.lower()
-
-        # Respect thumbnail enable flags
-        if ext in image_extensions and not Defaults["thumb_images"]:
-            continue
-        if ext in video_extensions and not Defaults["thumb_videos"]:
-            continue
-
-        thumb_path = get_thumbnail_path(
-            file_path,
-            thumb_folder_name=Defaults["thumb_folder_name"],
-            thumb_suffix=Defaults["thumb_suffix"],
-        )
-
-        create_thumbnail(
-            file_path,
-            out_path=thumb_path,
-            size=Defaults["thumb_size"],
-            codec=codec,
-        )
-
-
-def generate_thumbnail_for_sequence(sequence_dict):
+def generate_thumbnail_for_sequence(sequence_dict, config=None):
     """
     Generate a thumbnail for a frame sequence.
 
     The middle frame of the sequence is used as the thumbnail source.
     """
+    if config is None:
+        raise ValueError(
+            "thumbnailer functions now require a Config object. "
+            "Pipeline must pass config explicitly."
+        )
+
     frames = sequence_dict["frames"]
     folder = sequence_dict["folder"]
     basename = sequence_dict["basename"]
@@ -253,10 +222,15 @@ def generate_thumbnail_for_sequence(sequence_dict):
         print(f"Warning: middle frame missing: {frame_path}")
         return None
 
-    thumb_path = get_thumbnail_path(frame_path)
-    create_thumbnail(frame_path, out_path=thumb_path)
+    thumb_path = get_thumbnail_path(
+        frame_path,
+        thumb_folder_name=config.thumb_folder_name,
+        thumb_suffix=config.thumb_suffix,
+    )
 
-    if Defaults.get("verbose", True):
+    create_thumbnail(frame_path, out_path=thumb_path, config=config)
+
+    if config.verbose:
         print(
             f"Thumbnail created for sequence '{basename}' "
             f"(frame {middle_frame_number}) -> {thumb_path}"
@@ -273,8 +247,60 @@ if __name__ == "__main__":
     current_directory = Path(__file__).resolve().parent
     sample_media_folder = current_directory.parent.parent / "assets" / "sample_media"
 
+    test_config = Config(
+        recurse_subfolders=Defaults["recurse_subfolders"],
+        file_types=Defaults["file_types"],
+        combine_frame_seq=Defaults["combine_frame_seq"],
+        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
+
+        generate_thumbnails=True,
+        thumb_images=Defaults["thumb_images"],
+        thumb_videos=Defaults["thumb_videos"],
+        thumb_size=Defaults["thumb_size"],
+        thumb_suffix=Defaults["thumb_suffix"],
+        thumb_folder_name=Defaults["thumb_folder_name"],
+
+        include_media_types=Defaults["include_media_types"],
+        metadata_fields=Defaults["metadata_fields"],
+        metadata_sort_by=Defaults["metadata_sort_by"],
+        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
+
+        enable_organiser=False,
+        organiser_mode=Defaults["organiser_mode"],
+        filename_rules=Defaults["filename_rules"],
+        default_unsorted_folder=Defaults["default_unsorted_folder"],
+        move_files=False,
+
+        output_csv=False,
+        output_json=False,
+        output_excel=False,
+        output_tree=False,
+        report_output_dir=None,
+
+        verbose=True,
+        expand_log=Defaults["expand_log"],
+    )
+
     print("\n--- Thumbnail generation test ---")
 
-    generate_thumbnails_for_folder(sample_media_folder)
+    from .utils import group_frame_sequences
+
+    files = scan_folder(
+        sample_media_folder,
+        include_subfolders=test_config.recurse_subfolders,
+    )
+
+    items = (
+        group_frame_sequences(files)
+        if test_config.combine_frame_seq
+        else files
+    )
+
+    for item in items:
+        if isinstance(item, dict) and "frames" in item:
+            generate_thumbnail_for_sequence(item, config=test_config)
+        else:
+            create_thumbnail(item, config=test_config)
+
 
     print("\nThumbnail generation completed.")

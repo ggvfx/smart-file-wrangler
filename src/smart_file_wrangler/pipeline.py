@@ -115,10 +115,10 @@ def run_pipeline(folder_path, config=None):
         for item in items:
             # Frame sequence → single representative thumbnail
             if isinstance(item, dict) and "frames" in item:
-                generate_thumbnail_for_sequence(item)
+                generate_thumbnail_for_sequence(item, config=config)
             # Normal file → standard thumbnail
             else:
-                create_thumbnail(item)
+                create_thumbnail(item, config=config)
 
     # --------------------------------------------------------------
     # 2) File organisation

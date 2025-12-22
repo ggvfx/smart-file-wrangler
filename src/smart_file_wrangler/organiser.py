@@ -39,7 +39,7 @@ def organise_files(
         folder_path (Path | str): Base folder to scan.
         output_dir (Path | str | None): Output directory. Defaults to input folder.
         move_files (bool | None): Move files instead of copying.
-            If None, Defaults["move_files"] is used.
+            Must be resolved from Config or passed explicitly.
         mode (str): Organisation mode:
             - "media_type"
             - "extension"

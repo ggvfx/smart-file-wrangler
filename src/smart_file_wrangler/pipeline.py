@@ -128,6 +128,7 @@ def run_pipeline(folder_path, config=None):
             folder_path,
             move_files=config.move_files,
             ignore_thumbnails=config.ignore_thumbnail_folders,
+            config=config,
         )
 
 

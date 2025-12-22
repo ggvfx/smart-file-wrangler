@@ -17,7 +17,7 @@ from shutil import copy2, move
 
 from .file_scanner import scan_folder
 from .metadata_reader import extract_metadata
-from .config import Defaults
+from .config import Defaults, Config
 from .utils import group_frame_sequences
 from .logger import init_logger
 
@@ -26,10 +26,11 @@ def organise_files(
     folder_path,
     output_dir=None,
     move_files=None,
-    mode="extension",
+    mode=None,
     rules=None,
-    default_folder="unsorted",
-    ignore_thumbnails=False
+    default_folder=None,
+    ignore_thumbnails=False,
+    config=None,
 ):
     """
     Organise files in a folder into structured subfolders.
@@ -48,6 +49,23 @@ def organise_files(
         ignore_thumbnails (bool): Whether to skip thumbnail folders when scanning.
     """
 
+    # Resolve values from config if provided
+    if config is not None:
+        if move_files is None:
+            move_files = config.move_files
+        if mode is None:
+            mode = config.organiser_mode
+        if rules is None:
+            rules = config.filename_rules
+        if default_folder is None:
+            default_folder = config.default_unsorted_folder
+
+    if config is None:
+        raise ValueError(
+            "organise_files() now requires a Config object. "
+            "Pipeline must pass config explicitly."
+        )
+
     # --------------------------------------------------------------
     # Early exit if organiser is disabled
     # --------------------------------------------------------------
@@ -63,7 +81,10 @@ def organise_files(
 
     # Resolve move vs copy behavior
     if move_files is None:
-        move_files = Defaults["move_files"]
+        raise ValueError(
+            "move_files was not resolved from config or arguments"
+    )
+
 
     # --------------------------------------------------------------
     # Scan files from input folder
@@ -71,12 +92,12 @@ def organise_files(
     # Uses global recursion and thumbnail ignore rules
     file_list = scan_folder(
         folder_path,
-        include_subfolders=Defaults["recurse_subfolders"],
+        include_subfolders=config.recurse_subfolders,
         ignore_thumbnails=ignore_thumbnails,
     )
 
     # Optionally group frame sequences into logical items
-    if Defaults.get("combine_frame_seq", True):
+    if config.combine_frame_seq:
         # Each item is either:
         # - Path (regular file)
         # - dict describing a frame sequence
@@ -144,14 +165,14 @@ def organise_files(
                 raise ValueError(f"unknown organise mode: {mode}")
 
             # Determine parent folder based on recurse setting
-            parent_for_item = folder if Defaults["recurse_subfolders"] else output_dir
+            parent_for_item = folder if config.recurse_subfolders else output_dir
             dest_folder = parent_for_item / destination_folder
 
             # Create destination folder if it doesn't exist
             if not dest_folder.exists():
                 dest_folder.mkdir(parents=True, exist_ok=True)
                 created_folders.add(dest_folder.name)
-                if Defaults["verbose"]:
+                if config.verbose:
                     print(f'created folder: "{dest_folder}"')
 
             # Copy/move each frame individually
@@ -162,7 +183,7 @@ def organise_files(
                 dst_file = dest_folder / frame_file_name
 
                 if not src_file.exists():
-                    if Defaults["verbose"]:
+                    if config.verbose:
                         print(f"skipping missing frame: {src_file}")
                     continue
 
@@ -174,7 +195,7 @@ def organise_files(
                     action = "copied"
 
                 frames_copied += 1
-                if Defaults["verbose"]:
+                if config.verbose:
                     if matched_rule:
                         print(
                             f'{action} "{src_file}" → folder "{dest_folder.name}" '
@@ -185,7 +206,7 @@ def organise_files(
 
             if frames_copied > 0:
                 processed_files += 1
-                if Defaults["verbose"]:
+                if config.verbose:
                     if matched_rule:
                         print(
                             f'processed frame sequence: "{seq_name}" ({frames_copied} frames) '
@@ -257,7 +278,7 @@ def organise_files(
             # ------------------------------------------------------
             parent_for_file = (
                 file_path.parent
-                if Defaults["recurse_subfolders"]
+                if config.recurse_subfolders
                 else output_dir
             )
             final_folder_path = parent_for_file / destination_folder
@@ -265,7 +286,7 @@ def organise_files(
             if not final_folder_path.exists():
                 final_folder_path.mkdir(parents=True, exist_ok=True)
                 created_folders.add(destination_folder)
-                if Defaults["verbose"]:
+                if config.verbose:
                     print(f'created folder: "{final_folder_path}"')
 
             destination_file_path = final_folder_path / file_path.name
@@ -280,7 +301,7 @@ def organise_files(
 
             processed_files += 1
 
-            if Defaults["verbose"]:
+            if config.verbose:
                 if matched_rule:
                     print(
                         f'{action} "{file_path}" → folder "{destination_folder}" '

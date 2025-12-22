@@ -14,7 +14,7 @@ All business logic remains in pipeline and subsystem modules.
 import argparse
 from pathlib import Path
 
-from .config import Defaults, Config
+from .config import Config, Defaults
 from .pipeline import run_pipeline
 from .logger import init_logger
 

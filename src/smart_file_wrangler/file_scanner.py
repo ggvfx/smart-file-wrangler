@@ -15,7 +15,7 @@ move files, or generate outputs.
 
 from pathlib import Path
 
-from .config import Defaults, Config
+from .config import Config
 from .utils import detect_frame_sequences
 
 

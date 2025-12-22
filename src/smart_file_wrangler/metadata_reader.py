@@ -20,7 +20,7 @@ from .utils import (
     audio_extensions,
 )
 from .file_scanner import scan_folder
-from .config import Defaults, Config
+from .config import Config
 
 
 # ----------------------------------------------------------------------

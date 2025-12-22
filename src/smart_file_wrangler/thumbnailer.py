@@ -26,7 +26,7 @@ from .utils import (
     video_extensions,
     get_thumbnail_path,
 )
-from .config import Defaults, Config
+from .config import Config
 from .file_scanner import scan_folder
 from .logger import log
 

@@ -20,7 +20,7 @@ from .utils import (
     audio_extensions,
 )
 from .file_scanner import scan_folder
-from .config import Defaults
+from .config import Defaults, Config
 
 
 # ----------------------------------------------------------------------
@@ -219,15 +219,21 @@ def extract_metadata(file_path):
     return metadata
 
 
-def extract_metadata_for_folder(folder_path):
+def extract_metadata_for_folder(folder_path, config=None):
     """
     Extract metadata for all supported files in a folder.
+
+    Note:
+        This function is not used by the main pipeline, which performs
+        scanning and orchestration itself. It exists for standalone use
+        and manual testing.
 
     This function:
         - Scans the folder using scan_folder()
         - Extracts raw metadata for each file
-        - Applies media-type inclusion rules from Defaults
-        - Filters metadata fields based on Defaults["metadata_fields"]
+        - Applies media-type inclusion rules from config
+        - Filters metadata fields based on config.metadata_fields
+
 
     Args:
         folder_path (str | Path): Folder to scan.
@@ -235,6 +241,13 @@ def extract_metadata_for_folder(folder_path):
     Returns:
         list[dict]: List of filtered metadata dictionaries.
     """
+
+    if config is None:
+        raise ValueError(
+            "extract_metadata_for_folder() now requires a Config object. "
+            "Pipeline must pass config explicitly."
+        )
+
     folder_path = Path(folder_path)
 
     if not folder_path.is_dir():
@@ -242,8 +255,9 @@ def extract_metadata_for_folder(folder_path):
 
     files = scan_folder(
         folder_path,
-        include_subfolders=Defaults["recurse_subfolders"],
+        include_subfolders=config.recurse_subfolders,
         file_types=None,
+        config=config,
     )
 
     all_file_metadata = []
@@ -252,14 +266,16 @@ def extract_metadata_for_folder(folder_path):
         file_metadata = extract_metadata(current_file)
 
         media_type = file_metadata["media_type"]
-        if not Defaults["include_media_types"].get(media_type, False):
+        if not config.include_media_types.get(media_type, False):
             continue
+
 
         # Filter metadata fields based on user configuration
         filtered_metadata = {}
         for key, value in file_metadata.items():
-            if key in Defaults["metadata_fields"]:
+            if key in config.metadata_fields:
                 filtered_metadata[key] = value
+
 
         all_file_metadata.append(filtered_metadata)
 
@@ -282,10 +298,47 @@ if __name__ == "__main__":
             for key, value in current_file_metadata.items():
                 print(f"{key} : {value}")
 
+    from .config import Defaults, Config
+
+    test_config = Config(
+        recurse_subfolders=True,
+        file_types=Defaults["file_types"],
+        combine_frame_seq=Defaults["combine_frame_seq"],
+        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
+
+        generate_thumbnails=False,
+        thumb_images=False,
+        thumb_videos=False,
+        thumb_size=Defaults["thumb_size"],
+        thumb_suffix=Defaults["thumb_suffix"],
+        thumb_folder_name=Defaults["thumb_folder_name"],
+
+        include_media_types=Defaults["include_media_types"],
+        metadata_fields=Defaults["metadata_fields"],
+        metadata_sort_by=Defaults["metadata_sort_by"],
+        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
+
+        enable_organiser=False,
+        organiser_mode=Defaults["organiser_mode"],
+        filename_rules=Defaults["filename_rules"],
+        default_unsorted_folder=Defaults["default_unsorted_folder"],
+        move_files=False,
+
+        output_csv=False,
+        output_json=False,
+        output_excel=False,
+        output_tree=False,
+        report_output_dir=None,
+
+        verbose=True,
+        expand_log=Defaults["expand_log"],
+    )
+
     print("\n--- Folder metadata extraction test ---")
-    all_files_metadata = extract_metadata_for_folder(sample_folder)
+    all_files_metadata = extract_metadata_for_folder(sample_folder, config=test_config)
     for file_metadata in all_files_metadata:
         print(file_metadata)
+
 
     from .utils import group_frame_sequences
 

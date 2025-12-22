@@ -112,6 +112,21 @@ def organise_files(
     for item in file_list:
         matched_rule = None  # used only for logging string-rule matches
 
+        # ----------------------------------------------------------
+        # Skip files inside thumbnail folders
+        # ----------------------------------------------------------
+        if isinstance(item, dict) and "frames" in item:
+            # Use the first frame to determine sequence location
+            item_path = Path(item["folder"])
+        else:
+            item_path = Path(item)
+
+        if config.ignore_thumbnail_folders:
+            if config.thumb_folder_name in item_path.parts:
+                if config.verbose:
+                    print(f'skipping thumbnail item: "{item_path}"')
+                continue
+
         # ==========================================================
         # FRAME SEQUENCES
         # ==========================================================

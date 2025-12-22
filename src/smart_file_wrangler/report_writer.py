@@ -15,7 +15,7 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from .config import Defaults
+from .config import Defaults, Config
 
 
 # ----------------------------------------------------------------------
@@ -34,7 +34,7 @@ media_type_order = {
 # Path and filename helpers
 # ----------------------------------------------------------------------
 
-def make_relative_path(path_string, root_folder):
+def _make_relative_path(path_string, root_folder):
     """
     Convert an absolute path string to a path relative to root_folder.
     If conversion fails, fall back to the original string.
@@ -52,7 +52,7 @@ def make_relative_path(path_string, root_folder):
         return path_string
 
 
-def make_sequence_filename(metadata):
+def _make_sequence_filename(metadata):
     """
     Return the filename for reporting.
 
@@ -82,11 +82,11 @@ def _prepare_report_row(row, root_folder):
     output_row = dict(row)
 
     original_path = row.get("file_path", "")
-    relative_path = make_relative_path(original_path, root_folder)
+    relative_path = _make_relative_path(original_path, root_folder)
 
     # filename logic
     if row.get("frame_count"):
-        filename = make_sequence_filename(row)
+        filename = _make_sequence_filename(row)
     else:
         filename = Path(original_path).name if original_path else ""
 
@@ -95,7 +95,7 @@ def _prepare_report_row(row, root_folder):
 
     # human-readable file size
     size_bytes = row.get("file_size_bytes")
-    output_row["file_size"] = format_file_size(size_bytes)
+    output_row["file_size"] = _format_file_size(size_bytes)
 
     return output_row
 
@@ -104,7 +104,7 @@ def _prepare_report_row(row, root_folder):
 # CSV report
 # ----------------------------------------------------------------------
 
-def write_csv_report(data, output_path, root_folder):
+def write_csv_report(data, output_path, root_folder, config):
     """
     Write report data to a CSV file.
 
@@ -115,15 +115,15 @@ def write_csv_report(data, output_path, root_folder):
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    selected_fields = list(Defaults.get("metadata_fields", []))
+    selected_fields = list(config.metadata_fields)
 
     if "file_path" not in selected_fields:
         selected_fields.insert(0, "file_path")
 
-    header = ["filename"] + [f for f in selected_fields if f != "filename"]
+    header = ["filename"] + [field_name for field_name in selected_fields if field_name != "filename"]
 
-    with output_path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=header)
+    with output_path.open("w", newline="", encoding="utf-8") as output_file:
+        writer = csv.DictWriter(output_file, fieldnames=header)
         writer.writeheader()
 
         for row in data:
@@ -131,8 +131,8 @@ def write_csv_report(data, output_path, root_folder):
 
             # CSV expects file_size, not raw bytes
             prepared = {
-                k: prepared.get(k, "")
-                for k in header
+                field_name: prepared.get(field_name, "")
+                for field_name in header
             }
 
             writer.writerow(prepared)
@@ -144,7 +144,7 @@ def write_csv_report(data, output_path, root_folder):
 # JSON report
 # ----------------------------------------------------------------------
 
-def write_json_report(data, output_path, root_folder):
+def write_json_report(data, output_path, root_folder, config):
     """
     Write report data to a JSON file.
 
@@ -165,15 +165,15 @@ def write_json_report(data, output_path, root_folder):
         prepared.pop("file_size_bytes", None)
 
         filtered = {
-            k: prepared.get(k)
-            for k in ["filename"] + Defaults["metadata_fields"]
-            if k in prepared
+            field_name: prepared.get(field_name)
+            for field_name in ["filename"] + config.metadata_fields
+            if field_name in prepared
         }
 
         output_rows.append(filtered)
 
-    with output_path.open("w", encoding="utf-8") as f:
-        json.dump(output_rows, f, indent=2)
+    with output_path.open("w", encoding="utf-8") as output_file:
+        json.dump(output_rows, output_file, indent=2)
 
     print(f'JSON report written: "{output_path}" ({len(output_rows)} items)')
 
@@ -182,7 +182,7 @@ def write_json_report(data, output_path, root_folder):
 # Folder tree output
 # ----------------------------------------------------------------------
 
-def build_tree(items):
+def _build_tree(items):
     """
     Build a nested dictionary representing folder structure.
     """
@@ -201,7 +201,7 @@ def build_tree(items):
     return tree
 
 
-def write_tree_lines(tree, indent=""):
+def _write_tree_lines(tree, indent=""):
     lines = []
 
     entries = sorted(tree.items())
@@ -214,13 +214,13 @@ def write_tree_lines(tree, indent=""):
         if isinstance(subtree, dict):
             extension = "   " if is_last else "│  "
             lines.extend(
-                write_tree_lines(subtree, indent + extension)
+                _write_tree_lines(subtree, indent + extension)
             )
 
     return lines
 
 
-def write_folder_tree(items, output_path, root_folder):
+def write_folder_tree(items, output_path, root_folder, config):
     """
     Write a text-based folder tree.
     """
@@ -229,7 +229,7 @@ def write_folder_tree(items, output_path, root_folder):
 
     root_folder = Path(root_folder)
     root_name = root_folder.name
-    thumb_folder = Defaults["thumb_folder_name"]
+    thumb_folder = config.thumb_folder_name
 
     relative_items = []
 
@@ -244,8 +244,8 @@ def write_folder_tree(items, output_path, root_folder):
         new_item["file_path"] = str(relative_path)
         relative_items.append(new_item)
 
-    tree = build_tree(relative_items)
-    lines = write_tree_lines(tree)
+    tree = _build_tree(relative_items)
+    lines = _write_tree_lines(tree)
     lines = [root_name] + lines
 
     with output_path.open("w", encoding="utf-8") as tree_file:
@@ -259,7 +259,7 @@ def write_folder_tree(items, output_path, root_folder):
 # Excel report
 # ----------------------------------------------------------------------
 
-def write_excel_report(data, output_path, root_folder):
+def write_excel_report(data, output_path, root_folder, config):
     """
     Write report data to an Excel (.xlsx) file.
 
@@ -275,17 +275,23 @@ def write_excel_report(data, output_path, root_folder):
     sheet = workbook.active
     sheet.title = "Report"
 
-    selected_fields = list(Defaults.get("metadata_fields", []))
+    selected_fields = list(config.metadata_fields)
 
     if "file_path" not in selected_fields:
         selected_fields.insert(0, "file_path")
 
     selected_fields = [
-        "file_size" if f == "file_size_bytes" else f
-        for f in selected_fields
+        "file_size" if field_name == "file_size_bytes" else field_name
+        for field_name in selected_fields
     ]
 
-    header = ["filename"] + [f for f in selected_fields if f != "filename"]
+    header = [
+        "filename"
+    ] + [
+        field_name
+        for field_name in selected_fields
+        if field_name != "filename"
+    ]
     sheet.append(header)
 
     for row in data:
@@ -321,14 +327,14 @@ def sort_report_items(data, root_folder):
     """
     def sort_key(item):
         rel_path = Path(
-            make_relative_path(item.get("file_path", ""), root_folder)
+            _make_relative_path(item.get("file_path", ""), root_folder)
         )
 
         depth = len(rel_path.parts) - 1
         parent = rel_path.parent.as_posix()
 
         if item.get("frame_count"):
-            filename = make_sequence_filename(item)
+            filename = _make_sequence_filename(item)
         else:
             filename = Path(item.get("file_path", "")).name
 
@@ -362,7 +368,15 @@ def generate_reports(
     json_enabled=False,
     tree_enabled=False,
     excel_enabled=False,
+    config=None,
 ):
+    
+    if config is None:
+        raise ValueError(
+            "generate_reports() now requires a Config object. "
+            "Pipeline must pass config explicitly."
+        )
+
     # NOTE: sort_by/reverse preserved for API compatibility
     sorted_data = sort_report_items(metadata, input_folder)
 
@@ -371,6 +385,7 @@ def generate_reports(
             sorted_data,
             Path(output_dir) / "report.csv",
             root_folder=input_folder,
+            config=config,
         )
 
     if json_enabled:
@@ -378,6 +393,7 @@ def generate_reports(
             sorted_data,
             Path(output_dir) / "report.json",
             root_folder=input_folder,
+            config=config,
         )
 
     if tree_enabled:
@@ -385,6 +401,7 @@ def generate_reports(
             sorted_data,
             Path(output_dir) / "folder_tree.txt",
             root_folder=input_folder,
+            config=config,
         )
 
     if excel_enabled:
@@ -392,6 +409,7 @@ def generate_reports(
             sorted_data,
             Path(output_dir) / "report.xlsx",
             root_folder=input_folder,
+            config=config,
         )
 
 
@@ -399,7 +417,7 @@ def generate_reports(
 # Formatting helpers
 # ----------------------------------------------------------------------
 
-def format_file_size(bytes_value):
+def _format_file_size(bytes_value):
     """
     Convert a byte count to a human-readable string.
     """

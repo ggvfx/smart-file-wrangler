@@ -174,6 +174,7 @@ def run_pipeline(folder_path, config=None):
             json_enabled=config.output_json,
             excel_enabled=config.output_excel,
             tree_enabled=config.output_tree,
+            config=config,
         )
 
 

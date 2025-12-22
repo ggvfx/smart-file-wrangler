@@ -15,7 +15,7 @@ move files, or generate outputs.
 
 from pathlib import Path
 
-from .config import Defaults
+from .config import Defaults, Config
 from .utils import detect_frame_sequences
 
 
@@ -23,7 +23,8 @@ def scan_folder(
     root_path,
     include_subfolders=None,
     file_types=None,
-    ignore_thumbnails=False
+    ignore_thumbnails=False,
+    config=None,
 ):
     """
     Scan a folder and return matching file paths.
@@ -31,7 +32,7 @@ def scan_folder(
     Args:
         root_path (str | Path): Directory to scan.
         include_subfolders (bool | None): Whether to recurse into subdirectories.
-            If None, the default value from config.Defaults is used.
+            If None, the value must be provided via Config or arguments.
         file_types (list[str] | None): List of file extensions to include
             (e.g. ["mp4", "png"]). Case-insensitive, without leading dots.
             If None, all file types are included.
@@ -49,11 +50,22 @@ def scan_folder(
     # Validate input path early
     if not root_path.is_dir():
         raise ValueError(f"{root_path} is not a valid directory")
+    
+    # Resolve runtime configuration
+    if config is not None:
+        include_subfolders = config.recurse_subfolders
+        file_types = file_types or config.file_types
+        ignore_thumbnails = config.ignore_thumbnail_folders
+        thumb_folder_name = config.thumb_folder_name
+    else:
+        thumb_folder_name = None
 
     # Resolve recursion behavior
     # If not explicitly specified, fall back to global Defaults
     if include_subfolders is None:
-        include_subfolders = Defaults["recurse_subfolders"]
+        raise ValueError(
+        "include_subfolders was not resolved from Config or arguments"
+    )
 
     # Normalize file extensions for comparison
     # Convert to lowercase and strip leading dots
@@ -80,7 +92,7 @@ def scan_folder(
         #
         # This check looks for the thumbnail folder name anywhere in the path
         # parts to ensure generated thumbnails are not reprocessed.
-        if ignore_thumbnails and Defaults["thumb_folder_name"] in file_path.parts:
+        if ignore_thumbnails and thumb_folder_name in file_path.parts:
             continue
 
         # Check extension filter
@@ -97,7 +109,8 @@ def scan_files(
     folder_path,
     include_subfolders=None,
     file_types=None,
-    combine_frame_seq=True
+    combine_frame_seq=True,
+    config=None,
 ):
     """
     Scan a folder and return files or grouped frame sequences.
@@ -107,7 +120,7 @@ def scan_files(
     Args:
         folder_path (str | Path): Folder to scan.
         include_subfolders (bool | None): Whether to recurse into subfolders.
-            If None, the default from config.Defaults is used.
+            If None, the value must be provided via Config or arguments.
         file_types (list[str] | None): Optional extension filter.
         combine_frame_seq (bool): If True, consecutive frame sequences
             are grouped into a single logical item.
@@ -125,11 +138,24 @@ def scan_files(
                 "frames": list[int]
             }
     """
+    if config is not None:
+        include_subfolders = config.recurse_subfolders
+        file_types = file_types or config.file_types
+        combine_frame_seq = config.combine_frame_seq
+
+    #guard
+    if combine_frame_seq is None:
+        raise ValueError(
+            "combine_frame_seq was not resolved from Config or arguments"
+        )
+
+
     # First perform raw file discovery
     files = scan_folder(
         folder_path,
         include_subfolders=include_subfolders,
-        file_types=file_types
+        file_types=file_types,
+        config=config,
     )
 
     # Optionally detect and group frame sequences
@@ -157,7 +183,38 @@ if __name__ == "__main__":
 
     print("\nScanning files (with frame sequence detection enabled):\n")
 
-    scanned_items = scan_files(test_folder)
+    from .config import Defaults, Config
+
+    test_config = Config(
+        recurse_subfolders=True,
+        file_types=Defaults["file_types"],
+        combine_frame_seq=True,
+        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
+        generate_thumbnails=False,
+        thumb_images=False,
+        thumb_videos=False,
+        thumb_size=Defaults["thumb_size"],
+        thumb_suffix=Defaults["thumb_suffix"],
+        thumb_folder_name=Defaults["thumb_folder_name"],
+        include_media_types=Defaults["include_media_types"],
+        metadata_fields=Defaults["metadata_fields"],
+        metadata_sort_by=Defaults["metadata_sort_by"],
+        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
+        enable_organiser=False,
+        organiser_mode=Defaults["organiser_mode"],
+        filename_rules=Defaults["filename_rules"],
+        default_unsorted_folder=Defaults["default_unsorted_folder"],
+        move_files=False,
+        output_csv=False,
+        output_json=False,
+        output_excel=False,
+        output_tree=False,
+        report_output_dir=None,
+        verbose=True,
+        expand_log=Defaults["expand_log"],
+    )
+
+    scanned_items = scan_files(test_folder, config=test_config)
 
     for item in scanned_items:
         if isinstance(item, dict):

@@ -129,3 +129,116 @@ Defaults = {
     # Expand logging output with additional detail
     "expand_log": False,
 }
+
+
+from dataclasses import dataclass
+from typing import List, Dict, Optional
+
+
+@dataclass
+class Config:
+    """
+    Runtime configuration for a single Smart File Wrangler run.
+
+    This dataclass mirrors the Defaults dictionary exactly.
+    It exists to replace global mutable Defaults at runtime,
+    while preserving identical behavior and meaning.
+    """
+
+    # ------------------------------------------------------------------
+    # Scanning and file discovery
+    # ------------------------------------------------------------------
+
+    # Whether to recurse into subfolders when scanning input directories
+    recurse_subfolders: bool
+
+    # File extensions to include when scanning (without leading dots)
+    file_types: List[str]
+
+    # Whether to group frame sequences into logical units
+    combine_frame_seq: bool
+
+    # Ignore generated thumbnail folders during scanning
+    ignore_thumbnail_folders: bool
+
+
+    # ------------------------------------------------------------------
+    # Thumbnail generation
+    # ------------------------------------------------------------------
+
+    # Master switch for thumbnail generation
+    generate_thumbnails: bool
+
+    # Enable thumbnails for specific media types
+    thumb_images: bool
+    thumb_videos: bool
+
+    # Thumbnail output settings
+    thumb_size: int
+    thumb_suffix: str
+    thumb_folder_name: str
+
+
+    # ------------------------------------------------------------------
+    # Metadata extraction
+    # ------------------------------------------------------------------
+
+    # Media categories to include during metadata processing
+    include_media_types: Dict[str, bool]
+
+    # Metadata fields to extract and include in reports
+    metadata_fields: List[str]
+
+    # Metadata sorting options
+    # Options: "file_path", "extension", "media_type"
+    metadata_sort_by: str
+    metadata_sort_reverse: bool
+
+
+    # ------------------------------------------------------------------
+    # Organiser behavior
+    # ------------------------------------------------------------------
+
+    # Enable or disable the organiser subsystem entirely
+    enable_organiser: bool
+
+    # Organiser mode selection
+    # Options: "media_type", "extension", "filename_rule"
+    organiser_mode: str
+
+    # Filename-based organiser rules
+    # Only used if organiser_mode == "filename_rule"
+    # Example rule: {"type": "contains", "value": "SEF"}
+    filename_rules: List[Dict]
+
+    # Folder name for files that do not match organiser rules
+    default_unsorted_folder: str
+
+    # Whether files should be moved (True) or copied (False)
+    move_files: bool
+
+
+    # ------------------------------------------------------------------
+    # Reporting outputs
+    # ------------------------------------------------------------------
+
+    # Enable or disable specific report formats
+    output_csv: bool
+    output_json: bool
+    output_excel: bool
+    output_tree: bool
+
+    # Output directory for reports
+    # None = same folder as input
+    report_output_dir: Optional[str]
+
+
+    # ------------------------------------------------------------------
+    # Logging and verbosity
+    # ------------------------------------------------------------------
+
+    # Enable verbose console output
+    verbose: bool
+
+    # Expand logging output with additional detail
+    expand_log: bool

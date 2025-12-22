@@ -51,10 +51,6 @@ def organise_files(
     # --------------------------------------------------------------
     # Early exit if organiser is disabled
     # --------------------------------------------------------------
-    if not Defaults.get("enable_organiser", True):
-        if Defaults.get("verbose", True):
-            print("Organiser disabled — skipping file moves/copies")
-        return
 
     folder_path = Path(folder_path)
     if not folder_path.is_dir():

@@ -19,7 +19,7 @@ execution order and feature activation.
 
 from pathlib import Path
 
-from .config import Defaults
+from .config import Defaults, Config
 from .file_scanner import scan_folder
 from .utils import group_frame_sequences
 from .thumbnailer import (
@@ -31,7 +31,7 @@ from .metadata_reader import extract_metadata
 from .report_writer import generate_reports
 
 
-def run_pipeline(folder_path):
+def run_pipeline(folder_path, config=None):
     """
     Run the Smart File Wrangler pipeline on a folder.
 
@@ -43,21 +43,60 @@ def run_pipeline(folder_path):
     Args:
         folder_path (str | Path): Folder to process.
     """
+    # --------------------------------------------------------------
+    # Build a config if one not provided
+    # --------------------------------------------------------------
+    if config is None:
+        config = Config(
+            recurse_subfolders=Defaults["recurse_subfolders"],
+            file_types=Defaults["file_types"],
+            combine_frame_seq=Defaults["combine_frame_seq"],
+            ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
+
+            generate_thumbnails=Defaults["generate_thumbnails"],
+            thumb_images=Defaults["thumb_images"],
+            thumb_videos=Defaults["thumb_videos"],
+            thumb_size=Defaults["thumb_size"],
+            thumb_suffix=Defaults["thumb_suffix"],
+            thumb_folder_name=Defaults["thumb_folder_name"],
+
+            include_media_types=Defaults["include_media_types"],
+            metadata_fields=Defaults["metadata_fields"],
+            metadata_sort_by=Defaults["metadata_sort_by"],
+            metadata_sort_reverse=Defaults["metadata_sort_reverse"],
+
+            enable_organiser=Defaults["enable_organiser"],
+            organiser_mode=Defaults["organiser_mode"],
+            filename_rules=Defaults["filename_rules"],
+            default_unsorted_folder=Defaults["default_unsorted_folder"],
+            move_files=Defaults["move_files"],
+
+            output_csv=Defaults["output_csv"],
+            output_json=Defaults["output_json"],
+            output_excel=Defaults["output_excel"],
+            output_tree=Defaults["output_tree"],
+            report_output_dir=Defaults["report_output_dir"],
+
+            verbose=Defaults["verbose"],
+            expand_log=Defaults["expand_log"],
+        )
+
+
     folder_path = Path(folder_path)
 
     # --------------------------------------------------------------
     # Resolve shared pipeline flags
     # --------------------------------------------------------------
     # If organiser runs, subfolder scanning must also be enabled
-    organiser_enabled = Defaults.get("enable_organiser", True)
-    scan_subfolders = Defaults["recurse_subfolders"] or organiser_enabled
+    organiser_enabled = config.enable_organiser
+    scan_subfolders = config.recurse_subfolders or organiser_enabled
 
-    ignore_thumbnails = Defaults.get("ignore_thumbnail_folders", True)
+    ignore_thumbnails = config.ignore_thumbnail_folders
 
     # --------------------------------------------------------------
     # 1) Thumbnail generation
     # --------------------------------------------------------------
-    if Defaults.get("generate_thumbnails", False):
+    if config.generate_thumbnails:
 
         # Discover files for thumbnail generation
         files = scan_folder(
@@ -67,7 +106,7 @@ def run_pipeline(folder_path):
         )
 
         # Optionally group frame sequences
-        if Defaults.get("combine_frame_seq", True):
+        if config.combine_frame_seq:
             items = group_frame_sequences(files)
         else:
             items = files
@@ -84,20 +123,23 @@ def run_pipeline(folder_path):
     # --------------------------------------------------------------
     # 2) File organisation
     # --------------------------------------------------------------
-    if organiser_enabled:
+    if config.enable_organiser:
         organise_files(
             folder_path,
-            ignore_thumbnails=ignore_thumbnails,
+            move_files=config.move_files,
+            ignore_thumbnails=config.ignore_thumbnail_folders,
         )
+
+
 
     # --------------------------------------------------------------
     # 3) Report generation
     # --------------------------------------------------------------
     if (
-        Defaults.get("output_csv")
-        or Defaults.get("output_json")
-        or Defaults.get("output_tree")
-        or Defaults.get("output_excel")
+        config.output_csv
+        or config.output_json
+        or config.output_tree
+        or config.output_excel
     ):
         # Discover files for reporting
         files = scan_folder(
@@ -107,7 +149,7 @@ def run_pipeline(folder_path):
         )
 
         # Optionally group frame sequences
-        if Defaults.get("combine_frame_seq", True):
+        if config.combine_frame_seq:
             report_items = group_frame_sequences(files)
         else:
             report_items = files
@@ -118,19 +160,19 @@ def run_pipeline(folder_path):
             metadata.append(extract_metadata(item))
 
         # Resolve report output directory
-        output_dir = Defaults["report_output_dir"] or folder_path
+        output_dir = config.report_output_dir or folder_path
 
         generate_reports(
             metadata=metadata,
             input_folder=folder_path,
             output_dir=output_dir,
-            fields=Defaults["metadata_fields"],
-            sort_by=Defaults.get("metadata_sort_by"),
-            reverse=Defaults.get("metadata_sort_reverse", False),
-            csv_enabled=Defaults.get("output_csv"),
-            json_enabled=Defaults.get("output_json"),
-            excel_enabled=Defaults.get("output_excel"),
-            tree_enabled=Defaults.get("output_tree"),
+            fields=config.metadata_fields,
+            sort_by=config.metadata_sort_by,
+            reverse=config.metadata_sort_reverse,
+            csv_enabled=config.output_csv,
+            json_enabled=config.output_json,
+            excel_enabled=config.output_excel,
+            tree_enabled=config.output_tree,
         )
 
 

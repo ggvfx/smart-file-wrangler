@@ -54,7 +54,7 @@ def scan_folder(
     # Resolve runtime configuration
     if config is not None:
         include_subfolders = config.recurse_subfolders
-        file_types = file_types or config.file_types
+        #file_types = file_types or config.file_types
         ignore_thumbnails = config.ignore_thumbnail_folders
         thumb_folder_name = config.thumb_folder_name
     else:

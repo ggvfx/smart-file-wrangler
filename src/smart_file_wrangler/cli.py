@@ -5,7 +5,7 @@ Command-line interface for Smart File Wrangler.
 
 This CLI is intentionally thin. It is responsible only for:
 - Parsing command-line arguments
-- Overriding config.Defaults
+- Constructing a Config object from defaults and CLI overrides
 - Invoking the pipeline
 
 All business logic remains in pipeline and subsystem modules.
@@ -14,7 +14,7 @@ All business logic remains in pipeline and subsystem modules.
 import argparse
 from pathlib import Path
 
-from .config import Config, Defaults
+from .config import Config
 from .pipeline import run_pipeline
 from .logger import init_logger
 
@@ -54,6 +54,25 @@ def parse_args():
         "--move",
         action="store_true",
         help="Move files instead of copying (implies --organise)"
+    )
+    parser.add_argument(
+        "--organise-by",
+        choices=["media_type", "extension", "string_rule"],
+        default=None,
+        help="Organisation mode: media_type, extension, or string_rule"
+    )
+    parser.add_argument(
+        "--contains",
+        action="append",
+        default=[],
+        help="Organise files whose names contain this string (can be repeated)"
+    )
+
+    parser.add_argument(
+        "--starts-with",
+        action="append",
+        default=[],
+        help="Organise files whose names start with this string (can be repeated)"
     )
 
     # --------------------------------------------------------------
@@ -137,57 +156,76 @@ def run_cli():
     args = parse_args()
 
     # Initialise logging early
-    init_logger(verbose=Defaults["verbose"])
+    init_logger(verbose=args.verbose)
 
     input_folder = Path(args.input)
     if not input_folder.exists() or not input_folder.is_dir():
         raise ValueError(f"Input folder not found: {input_folder}")
 
-    # --------------------------------------------------------------
-    # Apply CLI overrides to Defaults
-    # --------------------------------------------------------------
-
-    # Logging and scanning
-    verbose = bool(args.verbose)
-    recurse_subfolders = bool(args.subfolders)
 
     # --------------------------------------------------------------
-    # Organiser settings
+    # Create Config instance
     # --------------------------------------------------------------
-    enable_organiser = bool(args.organise or args.move)
-    move_files = bool(args.move)
+    config = Config()
 
-    # --------------------------------------------------------------
-    # Thumbnail settings
-    # --------------------------------------------------------------
-    generate_thumbnails = bool(args.thumbnails)
+    # Core scanning
+    config.recurse_subfolders = args.subfolders
 
-    # --------------------------------------------------------------
-    # Report settings (reset first)
-    # --------------------------------------------------------------
-    output_csv = False
-    output_json = False
-    output_excel = False
-    output_tree = False
+    # Logging
+    config.verbose = args.verbose
 
+    # Organiser
+    config.enable_organiser = args.organise or args.move
+    config.move_files = args.move
+    # --------------------------------------------------------------
+    # Organiser configuration
+    # --------------------------------------------------------------
+    if args.organise_by:
+        config.organiser_mode = args.organise_by
+
+    # Build filename rules only if needed
+    rules = []
+
+    for value in args.contains:
+        rules.append({
+            "type": "contains",
+            "value": value,
+        })
+
+    for value in args.starts_with:
+        rules.append({
+            "type": "starts_with",
+            "value": value,
+        })
+
+    if rules:
+        config.filename_rules = rules
+
+
+    # Thumbnails
+    config.generate_thumbnails = args.thumbnails
+    config.thumb_size = args.thumb_size
+
+    # Reporting
+    config.output_csv = False
+    config.output_json = False
+    config.output_excel = False
+    config.output_tree = args.folder_tree
 
     if args.report_format == "csv":
-        output_csv = True
+        config.output_csv = True
     elif args.report_format == "json":
-        output_json = True
+        config.output_json = True
     elif args.report_format == "excel":
-        output_excel = True
+        config.output_excel = True
     elif args.report_format == "all":
-        output_csv = True
-        output_json = True
-        output_excel = True
-    elif args.report_format == "none":
-        pass
+        config.output_csv = True
+        config.output_json = True
+        config.output_excel = True
 
-    output_tree = bool(args.folder_tree)
-
-    # Report output directory (None means input folder)
-    report_output_dir=str(Path(args.output)) if args.output else None
+    config.report_output_dir = (
+        str(Path(args.output)) if args.output else None
+    )
 
     # --------------------------------------------------------------
     # Workflow shortcuts (mutually exclusive)
@@ -198,56 +236,17 @@ def run_cli():
         )
 
     if args.report_only:
-        enable_organiser = False
-        generate_thumbnails = False
+        config.enable_organiser = False
+        config.generate_thumbnails = False
 
     if args.thumbnails_only:
-        enable_organiser = False
-        generate_thumbnails = True
+        config.enable_organiser = False
+        config.generate_thumbnails = True
 
-        output_csv = False
-        output_json = False
-        output_excel = False
-        output_tree = False
-
-    # --------------------------------------------------------------
-    # Create Config instance
-    # --------------------------------------------------------------
-    config = Config(
-
-    recurse_subfolders=bool(args.subfolders),
-    file_types=Defaults["file_types"],
-    combine_frame_seq=Defaults["combine_frame_seq"],
-    ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
-
-    generate_thumbnails=generate_thumbnails,
-    thumb_images=Defaults["thumb_images"],
-    thumb_videos=Defaults["thumb_videos"],
-    thumb_size=int(args.thumb_size),
-    thumb_suffix=Defaults["thumb_suffix"],
-    thumb_folder_name=Defaults["thumb_folder_name"],
-
-    include_media_types=Defaults["include_media_types"],
-    metadata_fields=Defaults["metadata_fields"],
-    metadata_sort_by=Defaults["metadata_sort_by"],
-    metadata_sort_reverse=Defaults["metadata_sort_reverse"],
-
-    enable_organiser=enable_organiser,
-    organiser_mode=Defaults["organiser_mode"],
-    filename_rules=Defaults["filename_rules"],
-    default_unsorted_folder=Defaults["default_unsorted_folder"],
-    move_files=move_files,
-
-    output_csv=output_csv,
-    output_json=output_json,
-    output_excel=output_excel,
-    output_tree=output_tree,
-    report_output_dir=str(Path(args.output)) if args.output else None,
-
-    verbose=bool(args.verbose),
-    expand_log=Defaults["expand_log"],
-)
-
+        config.output_csv = False
+        config.output_json = False
+        config.output_excel = False
+        config.output_tree = False
 
     # --------------------------------------------------------------
     # Run pipeline

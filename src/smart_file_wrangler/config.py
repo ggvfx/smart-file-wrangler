@@ -131,7 +131,7 @@ Defaults = {
 }
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 
 
@@ -150,16 +150,16 @@ class Config:
     # ------------------------------------------------------------------
 
     # Whether to recurse into subfolders when scanning input directories
-    recurse_subfolders: bool
+    recurse_subfolders: bool = Defaults["recurse_subfolders"]
 
     # File extensions to include when scanning (without leading dots)
-    file_types: List[str]
+    file_types: List[str] = field(default_factory=lambda: Defaults["file_types"])
 
     # Whether to group frame sequences into logical units
-    combine_frame_seq: bool
+    combine_frame_seq: bool = Defaults["combine_frame_seq"]
 
     # Ignore generated thumbnail folders during scanning
-    ignore_thumbnail_folders: bool
+    ignore_thumbnail_folders: bool = Defaults["ignore_thumbnail_folders"]
 
 
     # ------------------------------------------------------------------
@@ -167,16 +167,16 @@ class Config:
     # ------------------------------------------------------------------
 
     # Master switch for thumbnail generation
-    generate_thumbnails: bool
+    generate_thumbnails: bool = Defaults["generate_thumbnails"]
 
     # Enable thumbnails for specific media types
-    thumb_images: bool
-    thumb_videos: bool
+    thumb_images: bool = Defaults["thumb_images"]
+    thumb_videos: bool = Defaults["thumb_videos"]
 
     # Thumbnail output settings
-    thumb_size: int
-    thumb_suffix: str
-    thumb_folder_name: str
+    thumb_size: int = Defaults["thumb_size"]
+    thumb_suffix: str = Defaults["thumb_suffix"]
+    thumb_folder_name: str = Defaults["thumb_folder_name"]
 
 
     # ------------------------------------------------------------------
@@ -184,15 +184,15 @@ class Config:
     # ------------------------------------------------------------------
 
     # Media categories to include during metadata processing
-    include_media_types: Dict[str, bool]
+    include_media_types: Dict[str, bool] = field(default_factory=lambda: Defaults["include_media_types"])
 
     # Metadata fields to extract and include in reports
-    metadata_fields: List[str]
+    metadata_fields: List[str] = field(default_factory=lambda: Defaults["metadata_fields"])
 
     # Metadata sorting options
     # Options: "file_path", "extension", "media_type"
-    metadata_sort_by: str
-    metadata_sort_reverse: bool
+    metadata_sort_by: str = Defaults["metadata_sort_by"]
+    metadata_sort_reverse: bool = Defaults["metadata_sort_reverse"]
 
 
     # ------------------------------------------------------------------
@@ -200,22 +200,22 @@ class Config:
     # ------------------------------------------------------------------
 
     # Enable or disable the organiser subsystem entirely
-    enable_organiser: bool
+    enable_organiser: bool = Defaults["enable_organiser"]
 
     # Organiser mode selection
     # Options: "media_type", "extension", "filename_rule"
-    organiser_mode: str
+    organiser_mode: str = Defaults["organiser_mode"]
 
     # Filename-based organiser rules
     # Only used if organiser_mode == "filename_rule"
     # Example rule: {"type": "contains", "value": "SEF"}
-    filename_rules: List[Dict]
+    filename_rules: List[Dict] = field(default_factory=lambda: Defaults["filename_rules"])
 
     # Folder name for files that do not match organiser rules
-    default_unsorted_folder: str
+    default_unsorted_folder: str = Defaults["default_unsorted_folder"]
 
     # Whether files should be moved (True) or copied (False)
-    move_files: bool
+    move_files: bool = Defaults["move_files"]
 
 
     # ------------------------------------------------------------------
@@ -223,14 +223,14 @@ class Config:
     # ------------------------------------------------------------------
 
     # Enable or disable specific report formats
-    output_csv: bool
-    output_json: bool
-    output_excel: bool
-    output_tree: bool
+    output_csv: bool = Defaults["output_csv"]
+    output_json: bool = Defaults["output_json"]
+    output_excel: bool = Defaults["output_excel"]
+    output_tree: bool = Defaults["output_tree"]
 
     # Output directory for reports
     # None = same folder as input
-    report_output_dir: Optional[str]
+    report_output_dir: Optional[str] = None
 
 
     # ------------------------------------------------------------------
@@ -238,7 +238,7 @@ class Config:
     # ------------------------------------------------------------------
 
     # Enable verbose console output
-    verbose: bool
+    verbose: bool = Defaults["verbose"]
 
     # Expand logging output with additional detail
-    expand_log: bool
+    expand_log: bool = Defaults["expand_log"]

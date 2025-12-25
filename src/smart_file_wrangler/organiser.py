@@ -19,7 +19,6 @@ from .file_scanner import scan_folder
 from .metadata_reader import extract_metadata
 from .config import Config
 from .utils import group_frame_sequences
-from .logger import init_logger
 from .media_item import MediaItem
 
 

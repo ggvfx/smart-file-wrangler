@@ -23,7 +23,6 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
-from .config import Config
 from .media_item import MediaItem
 
 # ----------------------------------------------------------------------

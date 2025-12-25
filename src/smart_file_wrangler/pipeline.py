@@ -26,7 +26,6 @@ from .thumbnailer import (generate_thumbnail_for_sequence, create_thumbnail)
 from .organiser import organise_files
 from .metadata_reader import extract_metadata
 from .report_writer import generate_reports
-from .media_item import MediaItem
 
 
 # Internal helper: scans once for a stage, then list is reused by caller. No filtering or behavior assumptions.

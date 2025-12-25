@@ -108,9 +108,8 @@ def _prepare_report_row(row, root_folder):
 
 def write_csv_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally, no behavior change to legacy callers
-    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
-            m.path if isinstance(m, MediaItem) else m
-            for m in data]
+    data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
+
 
     """
     Write report data to a CSV file.
@@ -153,9 +152,8 @@ def write_csv_report(data, output_path, root_folder, config):
 
 def write_json_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally
-    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
-            m.path if isinstance(m, MediaItem) else m
-            for m in data]
+    data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
+
 
     """
     Write report data to a JSON file.
@@ -273,9 +271,8 @@ def write_folder_tree(items, output_path, root_folder, config):
 
 def write_excel_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally
-    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
-            m.path if isinstance(m, MediaItem) else m
-            for m in data]
+    data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
+
 
     """
     Write report data to an Excel (.xlsx) file.
@@ -350,10 +347,10 @@ def sort_report_items(data, root_folder):
         depth = len(rel_path.parts) - 1
         parent = rel_path.parent.as_posix()
 
-        if item.get("frame_count"):
+        if isinstance(item, MediaItem) and item.kind == "sequence":
             filename = _make_sequence_filename(item)
         else:
-            filename = Path(item.get("file_path", "")).name
+            filename = Path(item.sequence_info.get("file_path", "")).name if isinstance(item, MediaItem) else Path(item.get("file_path", "")).name
 
         media_type = item.get("media_type", "other")
         media_order = media_type_order.get(media_type, 99)

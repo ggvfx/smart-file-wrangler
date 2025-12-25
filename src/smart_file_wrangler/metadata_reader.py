@@ -297,10 +297,15 @@ def extract_metadata_for_folder(folder_path, config=None):
 
 
 # ----------------------------------------------------------------------
-# Manual testing
+# Manual testing (isolated, behavior-safe, uses Config defaults directly)
 # ----------------------------------------------------------------------
 
 if __name__ == "__main__":
+    from .config import Config
+    from .utils import scan_folder, group_frame_sequences
+    from .thumbnailer import generate_thumbnail_for_sequence  # only used in sequence test print
+    from .metadata_reader import extract_metadata, extract_metadata_for_folder
+
     here = Path(__file__).resolve().parent
     sample_folder = here.parent.parent / "assets" / "sample_media"
 
@@ -308,53 +313,36 @@ if __name__ == "__main__":
     for current_file in sample_folder.iterdir():
         if current_file.is_file():
             print(f"\nTesting file: {current_file.name}")
-            current_file_metadata = extract_metadata(current_file)
-            for key, value in current_file_metadata.items():
+            file_meta = extract_metadata(current_file)
+            for key, value in file_meta.items():
                 print(f"{key} : {value}")
 
-    from .config import Defaults, Config
-
+    print("\n--- Folder metadata extraction test ---")
+    # Build test Config using literal defaults (no Defaults dict)
     test_config = Config(
         recurse_subfolders=True,
-        file_types=Defaults["file_types"],
-        combine_frame_seq=Defaults["combine_frame_seq"],
-        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
-
+        file_types=[".png", ".jpg", ".jpeg", ".mp4", ".mov", ".wav", ".xls", ".xlsx", ".epub", ".txt", ".zip", ".md", ".ods", ".odt", ".pdf", ".rtf"],
+        combine_frame_seq=True,
+        ignore_thumbnail_folders=True,
         generate_thumbnails=False,
         thumb_images=False,
         thumb_videos=False,
-        thumb_size=Defaults["thumb_size"],
-        thumb_suffix=Defaults["thumb_suffix"],
-        thumb_folder_name=Defaults["thumb_folder_name"],
-
-        include_media_types=Defaults["include_media_types"],
-        metadata_fields=Defaults["metadata_fields"],
-        metadata_sort_by=Defaults["metadata_sort_by"],
-        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
-
+        thumb_size=(400, 300),
+        thumb_suffix="_thumb",
+        thumb_folder_name="thumbnails",
+        include_media_types={"image": True, "video": True, "audio": True, "other": True},
+        metadata_fields=["file_path", "file_size_bytes", "media_type", "extension", "resolution_px", "duration_seconds", "sample_rate_hz", "mode", "format"],
+        metadata_sort_by="file_size_bytes",
+        metadata_sort_reverse=False,
         enable_organiser=False,
-        organiser_mode=Defaults["organiser_mode"],
-        filename_rules=Defaults["filename_rules"],
-        default_unsorted_folder=Defaults["default_unsorted_folder"],
-        move_files=False,
-
-        output_csv=False,
-        output_json=False,
-        output_excel=False,
-        output_tree=False,
-        report_output_dir=None,
-
+        organiser_mode="copy",
+        default_unsorted_folder="other",
         verbose=True,
-        expand_log=Defaults["expand_log"],
     )
 
-    print("\n--- Folder metadata extraction test ---")
-    all_files_metadata = extract_metadata_for_folder(sample_folder, config=test_config)
-    for file_metadata in all_files_metadata:
+    folder_meta = extract_metadata_for_folder(sample_folder, config=test_config)
+    for file_metadata in folder_meta:
         print(file_metadata)
-
-
-    from .utils import group_frame_sequences
 
     print("\n--- Frame sequence metadata test ---")
     files = scan_folder(sample_folder, include_subfolders=True)

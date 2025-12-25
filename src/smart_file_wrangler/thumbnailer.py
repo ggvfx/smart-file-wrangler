@@ -253,61 +253,51 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
 
 
 # ----------------------------------------------------------------------
-# Manual testing
+# Manual testing (isolated, behavior-safe, uses Config defaults directly)
 # ----------------------------------------------------------------------
 
 if __name__ == "__main__":
+    from .config import Config
+    from .utils import scan_folder, group_frame_sequences
+    from .thumbnailer import generate_thumbnail_for_sequence, create_thumbnail
+
     current_directory = Path(__file__).resolve().parent
     sample_media_folder = current_directory.parent.parent / "assets" / "sample_media"
 
+    # Build test Config using its own internal defaults (no Defaults dict)
     test_config = Config(
-        recurse_subfolders=Defaults["recurse_subfolders"],
-        file_types=Defaults["file_types"],
-        combine_frame_seq=Defaults["combine_frame_seq"],
-        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
-
+        recurse_subfolders=True,
+        file_types=[".png", ".jpg", ".jpeg", ".mp4", ".mov", ".wav", ".xls", ".xlsx", ".epub", ".txt", ".zip", ".md", ".ods", ".odt", ".pdf", ".rtf", ".svg", ".tsv"],
+        combine_frame_seq=True,
+        ignore_thumbnail_folders=True,
         generate_thumbnails=True,
-        thumb_images=Defaults["thumb_images"],
-        thumb_videos=Defaults["thumb_videos"],
-        thumb_size=Defaults["thumb_size"],
-        thumb_suffix=Defaults["thumb_suffix"],
-        thumb_folder_name=Defaults["thumb_folder_name"],
-
-        include_media_types=Defaults["include_media_types"],
-        metadata_fields=Defaults["metadata_fields"],
-        metadata_sort_by=Defaults["metadata_sort_by"],
-        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
-
+        thumb_images=True,
+        thumb_videos=True,
+        thumb_size=(400, 300),
+        thumb_suffix="_thumb",
+        thumb_folder_name="thumbnails",
+        include_media_types={"image": True, "video": True, "audio": True, "other": True},
+        metadata_fields=["file_path", "file_size_bytes", "media_type", "extension", "resolution_px", "duration_seconds", "sample_rate_hz", "mode", "format"],
+        metadata_sort_by="file_size_bytes",
+        metadata_sort_reverse=False,
         enable_organiser=False,
-        organiser_mode=Defaults["organiser_mode"],
-        filename_rules=Defaults["filename_rules"],
-        default_unsorted_folder=Defaults["default_unsorted_folder"],
+        organiser_mode="copy",
+        filename_rules={},
+        default_unsorted_folder="other",
         move_files=False,
-
         output_csv=False,
         output_json=False,
         output_excel=False,
         output_tree=False,
         report_output_dir=None,
-
         verbose=True,
-        expand_log=Defaults["expand_log"],
     )
 
     print("\n--- Thumbnail generation test ---")
 
-    from .utils import group_frame_sequences
-
-    files = scan_folder(
-        sample_media_folder,
-        include_subfolders=test_config.recurse_subfolders,
-    )
-
-    items = (
-        group_frame_sequences(files)
-        if test_config.combine_frame_seq
-        else files
-    )
+    # Single scan + grouping pass (legacy behavior preserved)
+    files = scan_folder(sample_media_folder, include_subfolders=test_config.recurse_subfolders)
+    items = group_frame_sequences(files)
 
     for item in items:
         if isinstance(item, dict) and "frames" in item:
@@ -315,5 +305,5 @@ if __name__ == "__main__":
         else:
             create_thumbnail(item, config=test_config)
 
-
     print("\nThumbnail generation completed.")
+

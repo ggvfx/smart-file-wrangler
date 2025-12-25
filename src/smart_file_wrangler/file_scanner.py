@@ -1,50 +1,45 @@
 """
 file_scanner.py
 
-Scans folders to discover files for processing.
+Filesystem discovery for Smart File Wrangler.
 
-This module is responsible for:
-- Traversing a directory (optionally recursively)
-- Filtering files by extension
-- Excluding generated artifacts such as thumbnails
-- Optionally grouping frame sequences into logical units
+Purpose:
+- Scans folders to discover files on disk
+- Returns physical filesystem entries (Path objects)
+- Delegates sequence grouping to utils
+- Wraps results into internal MediaItem objects later
 
-This module performs discovery only. It does not read metadata,
-move files, or generate outputs.
+Terminology:
+- files = physical filesystem entries on disk
+- sequences = grouped frame sequences (dict objects from utils)
+- media items = internal wrapped objects for clarity only (MediaItem)
+
+This module contains no filtering or business logic — it only discovers files
+and hands them off to other subsystems.
 """
 
 from pathlib import Path
-
 from .config import Config
 from .utils import detect_frame_sequences
 from .media_item import MediaItem
 
-def scan_folder(
-    root_path,
-    include_subfolders=None,
-    file_types=None,
-    ignore_thumbnails=False,
-    config=None,
-):
+def scan_folder(root_path, include_subfolders=None, file_types=None, ignore_thumbnails=False, config=None):
     """
-    Scan a folder and return matching file paths.
+    Scan a folder and return all discovered files.
 
     Args:
-        root_path (str | Path): Directory to scan.
-        include_subfolders (bool | None): Whether to recurse into subdirectories.
-            If None, the value must be provided via Config or arguments.
-        file_types (list[str] | None): List of file extensions to include
-            (e.g. ["mp4", "png"]). Case-insensitive, without leading dots.
-            If None, all file types are included.
-        ignore_thumbnails (bool): If True, files located inside the thumbnail
-            output folder are excluded.
+        folder (Path): Folder to scan
+        include_subfolders (bool): Whether to recurse into subfolders
+        config (Config | None): Optional config used only for default recursion flag
 
     Returns:
-        list[Path]: List of matching file paths.
+        List[Path]: All discovered files on disk as physical filesystem entries
 
-    Raises:
-        ValueError: If root_path does not exist or is not a directory.
+    Notes:
+        - This function preserves legacy behavior and makes no assumptions about MediaItem.
+        - No filtering is performed here.
     """
+
     root_path = Path(root_path)
 
     # Validate input path early
@@ -54,7 +49,6 @@ def scan_folder(
     # Resolve runtime configuration
     if config is not None:
         include_subfolders = config.recurse_subfolders
-        #file_types = file_types or config.file_types
         ignore_thumbnails = config.ignore_thumbnail_folders
         thumb_folder_name = config.thumb_folder_name
     else:
@@ -105,13 +99,7 @@ def scan_folder(
     return matched_files
 
 
-def scan_files(
-    folder_path,
-    include_subfolders=None,
-    file_types=None,
-    combine_frame_seq=True,
-    config=None,
-):
+def scan_files(folder_path, include_subfolders=None, file_types=None, combine_frame_seq=True, config=None):
     """
     Scan a folder and return files or grouped frame sequences.
 
@@ -151,12 +139,7 @@ def scan_files(
 
 
     # First perform raw file discovery
-    files = scan_folder(
-        folder_path,
-        include_subfolders=include_subfolders,
-        file_types=file_types,
-        config=config,
-    )
+    files = scan_folder(folder_path, include_subfolders=include_subfolders, file_types=file_types, config=config)
 
     # Optionally detect and group frame sequences
     #
@@ -189,25 +172,28 @@ def _items_to_media_items(items):
 
     return media_items
 
-def scan_media_items(
-    folder_path,
-    include_subfolders=None,
-    file_types=None,
-    combine_frame_seq=True,
-    config=None,
-):
+def scan_media_items(folder_path, include_subfolders=None, file_types=None, combine_frame_seq=True, config=None):
     """
-    Safe wrapper around scan_files() that returns MediaItem objects.
-    Existing scan_files() remains unchanged.
+    Scan a folder and return internal media units for pipeline orchestration.
+
+    Args:
+        folder (Path): Folder to scan
+        include_subfolders (bool): Whether to recurse into subfolders
+        config (Config | None): Optional config used only for default recursion flag
+
+    Returns:
+        List[MediaItem]: Wrapped media objects (file or sequence) for internal clarity
+
+    Notes:
+        - Unconditionally wraps sequences (dict) and files (Path) into MediaItem objects.
+        - This is internal only and does not change behavior of the pipeline.
+        - No filtering or business logic is added here.
     """
-    items = scan_files(
-        folder_path,
-        include_subfolders=include_subfolders,
-        file_types=file_types,
-        combine_frame_seq=combine_frame_seq,
-        config=config,
-    )
+
+    items = scan_files(folder_path, include_subfolders=include_subfolders, file_types=file_types, combine_frame_seq=combine_frame_seq, config=config)
+
     return _items_to_media_items(items)
+
 
 
 # ----------------------------------------------------------------------
@@ -223,27 +209,15 @@ if __name__ == "__main__":
 
     print("\nScanning files (with frame sequence detection enabled):\n")
 
-    from .config import Defaults, Config
+    from .config import Config
 
     test_config = Config(
         recurse_subfolders=True,
-        file_types=Defaults["file_types"],
         combine_frame_seq=True,
-        ignore_thumbnail_folders=Defaults["ignore_thumbnail_folders"],
         generate_thumbnails=False,
         thumb_images=False,
         thumb_videos=False,
-        thumb_size=Defaults["thumb_size"],
-        thumb_suffix=Defaults["thumb_suffix"],
-        thumb_folder_name=Defaults["thumb_folder_name"],
-        include_media_types=Defaults["include_media_types"],
-        metadata_fields=Defaults["metadata_fields"],
-        metadata_sort_by=Defaults["metadata_sort_by"],
-        metadata_sort_reverse=Defaults["metadata_sort_reverse"],
         enable_organiser=False,
-        organiser_mode=Defaults["organiser_mode"],
-        filename_rules=Defaults["filename_rules"],
-        default_unsorted_folder=Defaults["default_unsorted_folder"],
         move_files=False,
         output_csv=False,
         output_json=False,
@@ -251,8 +225,8 @@ if __name__ == "__main__":
         output_tree=False,
         report_output_dir=None,
         verbose=True,
-        expand_log=Defaults["expand_log"],
     )
+
 
     scanned_items = scan_files(test_folder, config=test_config)
 

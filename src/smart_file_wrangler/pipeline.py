@@ -32,8 +32,8 @@ from .report_writer import generate_reports
 from .media_item import MediaItem
 
 
+#Internal helper: scans once for a stage, then list is reused by caller. No filtering or behavior assumptions.
 def _scan_once(folder_path, config, ignore_thumbnails):
-    # Behavior-safe: single source of discovery, no filtering
     files = scan_folder(
         folder_path,
         include_subfolders=config.recurse_subfolders,

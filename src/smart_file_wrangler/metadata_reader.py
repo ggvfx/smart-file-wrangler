@@ -21,6 +21,7 @@ from .utils import (
 )
 from .file_scanner import scan_folder
 from .config import Config
+from .media_item import MediaItem
 
 
 # ----------------------------------------------------------------------
@@ -91,18 +92,19 @@ def extract_metadata(file_path):
     Extract raw metadata for a single file or frame sequence.
 
     Args:
-        file_path (Path | dict):
+        file_path (Path | dict | MediaItem):
             - Path: a normal file on disk
             - dict: a frame sequence dictionary produced by utils.detect_frame_sequences
-
-    Returns:
-        dict: Raw metadata dictionary.
-
-    Notes:
-        - This function performs no formatting or filtering.
-        - Frame sequences are treated as a single logical item.
-        - Video/audio metadata is only extracted if ffmpeg/ffprobe is available.
+            - MediaItem: internal wrapper for either a file or sequence
+    ...
     """
+
+    # --- MediaItem unwrapping (behavior-safe) ---
+    if isinstance(file_path, MediaItem):
+        if file_path.kind == "sequence":
+            file_path = file_path.sequence_info
+        else:
+            file_path = file_path.path
 
     # ------------------------------------------------------------------
     # 1) FRAME SEQUENCES

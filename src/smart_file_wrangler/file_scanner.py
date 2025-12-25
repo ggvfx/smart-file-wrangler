@@ -17,7 +17,7 @@ from pathlib import Path
 
 from .config import Config
 from .utils import detect_frame_sequences
-
+from .media_item import MediaItem
 
 def scan_folder(
     root_path,
@@ -168,6 +168,46 @@ def scan_files(
         items = files
 
     return items
+
+
+def _items_to_media_items(items):
+    """
+    Convert legacy scan output (Path | dict) into MediaItem objects.
+    Behavior-safe: does not change scan logic, only wraps results.
+    """
+    media_items = []
+
+    for item in items:
+        if isinstance(item, dict):
+            media_items.append(
+                MediaItem(kind="sequence", path=None, sequence_info=item)
+            )
+        else:
+            media_items.append(
+                MediaItem(kind="file", path=item, sequence_info=None)
+            )
+
+    return media_items
+
+def scan_media_items(
+    folder_path,
+    include_subfolders=None,
+    file_types=None,
+    combine_frame_seq=True,
+    config=None,
+):
+    """
+    Safe wrapper around scan_files() that returns MediaItem objects.
+    Existing scan_files() remains unchanged.
+    """
+    items = scan_files(
+        folder_path,
+        include_subfolders=include_subfolders,
+        file_types=file_types,
+        combine_frame_seq=combine_frame_seq,
+        config=config,
+    )
+    return _items_to_media_items(items)
 
 
 # ----------------------------------------------------------------------

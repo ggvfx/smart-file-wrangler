@@ -16,6 +16,8 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
 from .config import Config
+from .media_item import MediaItem
+
 
 
 # ----------------------------------------------------------------------
@@ -105,6 +107,11 @@ def _prepare_report_row(row, root_folder):
 # ----------------------------------------------------------------------
 
 def write_csv_report(data, output_path, root_folder, config):
+    # unwrap MediaItem internally, no behavior change to legacy callers
+    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
+            m.path if isinstance(m, MediaItem) else m
+            for m in data]
+
     """
     Write report data to a CSV file.
 
@@ -145,6 +152,11 @@ def write_csv_report(data, output_path, root_folder, config):
 # ----------------------------------------------------------------------
 
 def write_json_report(data, output_path, root_folder, config):
+    # unwrap MediaItem internally
+    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
+            m.path if isinstance(m, MediaItem) else m
+            for m in data]
+
     """
     Write report data to a JSON file.
 
@@ -260,6 +272,11 @@ def write_folder_tree(items, output_path, root_folder, config):
 # ----------------------------------------------------------------------
 
 def write_excel_report(data, output_path, root_folder, config):
+    # unwrap MediaItem internally
+    data = [m.sequence_info if isinstance(m, MediaItem) and m.kind == "sequence" else
+            m.path if isinstance(m, MediaItem) else m
+            for m in data]
+
     """
     Write report data to an Excel (.xlsx) file.
 

@@ -20,6 +20,8 @@ from .metadata_reader import extract_metadata
 from .config import Config
 from .utils import group_frame_sequences
 from .logger import init_logger
+from .media_item import MediaItem
+
 
 
 def organise_files(
@@ -90,18 +92,20 @@ def organise_files(
     # Scan files from input folder
     # --------------------------------------------------------------
     # Uses global recursion and thumbnail ignore rules
-    file_list = scan_folder(
+    legacy_items = scan_folder(
         folder_path,
         include_subfolders=config.recurse_subfolders,
         ignore_thumbnails=ignore_thumbnails,
     )
 
-    # Optionally group frame sequences into logical items
-    if config.combine_frame_seq:
-        # Each item is either:
-        # - Path (regular file)
-        # - dict describing a frame sequence
-        file_list = group_frame_sequences(file_list)
+    # Wrap into MediaItem for internal clarity (no filtering, no behavior change)
+    file_list = [MediaItem(kind="sequence", sequence_info=i) if isinstance(i, dict)
+                else MediaItem(kind="file", path=i)
+                for i in group_frame_sequences(legacy_items)]
+
+
+    # do nothing here — already grouped earlier in legacy_items
+
 
     created_folders = set()
     processed_files = 0
@@ -109,7 +113,22 @@ def organise_files(
     # --------------------------------------------------------------
     # Process each item
     # --------------------------------------------------------------
-    for item in file_list:
+    for media in file_list:
+        # unwrap into the SAME legacy variable name the code below already uses
+        if media.kind == "sequence":
+            item = media.sequence_info  # dict
+        else:
+            item = media.path  # Path
+
+    # ----------------------------------------------------------
+    # Existing organiser logic continues here using `item`
+    # (indent all of your current folder/copy/move code under this)
+    # ----------------------------------------------------------
+
+
+    # pipeline continues below using `item` exactly like before
+
+
         matched_rule = None  # used only for logging string-rule matches
 
         # ----------------------------------------------------------

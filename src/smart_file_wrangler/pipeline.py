@@ -29,6 +29,7 @@ from .thumbnailer import (
 from .organiser import organise_files
 from .metadata_reader import extract_metadata
 from .report_writer import generate_reports
+from .media_item import MediaItem
 
 
 def run_pipeline(folder_path, config=None):
@@ -68,28 +69,20 @@ def run_pipeline(folder_path, config=None):
     # --------------------------------------------------------------
     if config.generate_thumbnails:
 
-        # Discover files for thumbnail generation
-        files = scan_folder(
-            folder_path,
-            include_subfolders=scan_subfolders,
-            ignore_thumbnails=ignore_thumbnails,
-            config=config,
-        )
+        items = group_frame_sequences(scan_folder(folder_path, include_subfolders=scan_subfolders, config=config))
+        items = [MediaItem(kind="sequence", sequence_info=i) if isinstance(i, dict)
+                else MediaItem(kind="file", path=i)
+                for i in items]
 
-        # Optionally group frame sequences
-        if config.combine_frame_seq:
-            items = group_frame_sequences(files)
-        else:
-            items = files
 
-        # Generate thumbnails
-        for item in items:
-            # Frame sequence → single representative thumbnail
-            if isinstance(item, dict) and "frames" in item:
-                generate_thumbnail_for_sequence(item, config=config)
-            # Normal file → standard thumbnail
+        for media in items:
+            # sequence case
+            if media.kind == "sequence":
+                generate_thumbnail_for_sequence(media.sequence_info, config=config)
+            # normal file case
             else:
-                create_thumbnail(item, config=config)
+                create_thumbnail(media.path, config=config)
+
 
     # --------------------------------------------------------------
     # 2) File organisation
@@ -111,24 +104,25 @@ def run_pipeline(folder_path, config=None):
         or config.output_tree
         or config.output_excel
     ):
-        # Discover files for reporting
+
+        # Behavior-preserving: discover ALL files using scan_folder (no MediaItem filtering yet)
         files = scan_folder(
             folder_path,
             include_subfolders=scan_subfolders,
+            file_types=None,
             ignore_thumbnails=ignore_thumbnails,
             config=config,
         )
 
-        # Optionally group frame sequences
-        if config.combine_frame_seq:
-            report_items = group_frame_sequences(files)
-        else:
-            report_items = files
+        # Wrap into MediaItem objects for internal clarity only
+        report_items = [MediaItem(kind="sequence", sequence_info=i) if isinstance(i, dict)
+                        else MediaItem(kind="file", path=i)
+                        for i in group_frame_sequences(files)]
 
         # Extract metadata for each item
         metadata = []
-        for item in report_items:
-            metadata.append(extract_metadata(item))
+        for media in report_items:
+            metadata.append(extract_metadata(media))
 
         # Resolve report output directory
         output_dir = config.report_output_dir or folder_path

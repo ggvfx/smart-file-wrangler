@@ -29,6 +29,8 @@ from .utils import (
 from .config import Config
 from .file_scanner import scan_folder
 from .logger import log
+from .media_item import MediaItem
+
 
 
 # ----------------------------------------------------------------------
@@ -64,6 +66,10 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=No
             "create_thumbnail() now requires a Config object. "
             "Pipeline must pass config explicitly."
         )
+    
+    if isinstance(file_path, MediaItem):
+        file_path = file_path.sequence_info if file_path.kind == "sequence" else file_path.path
+
 
     if size is None:
         size = config.thumb_size
@@ -193,11 +199,18 @@ def _create_video_thumbnail(file_path, out_path, size, codec):
 # ----------------------------------------------------------------------
 
 def generate_thumbnail_for_sequence(sequence_dict, config=None):
+    if isinstance(sequence_dict, MediaItem):
+        sequence_dict = sequence_dict.sequence_info
+
     """
     Generate a thumbnail for a frame sequence.
 
     The middle frame of the sequence is used as the thumbnail source.
     """
+    # unwrap MediaItem safely (behavior preserved)
+    if isinstance(sequence_dict, MediaItem):
+        sequence_dict = sequence_dict.sequence_info
+
     if config is None:
         raise ValueError(
             "thumbnailer functions now require a Config object. "

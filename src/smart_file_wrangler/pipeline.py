@@ -32,6 +32,19 @@ from .report_writer import generate_reports
 from .media_item import MediaItem
 
 
+def _scan_once(folder_path, config, ignore_thumbnails):
+    # Behavior-safe: single source of discovery, no filtering
+    files = scan_folder(
+        folder_path,
+        include_subfolders=config.recurse_subfolders,
+        file_types=None,
+        ignore_thumbnails=ignore_thumbnails,
+        config=config,
+    )
+    return files
+
+
+
 def run_pipeline(folder_path, config=None):
     """
     Run the Smart File Wrangler pipeline on a folder.
@@ -68,32 +81,31 @@ def run_pipeline(folder_path, config=None):
     # 1) Thumbnail generation
     # --------------------------------------------------------------
     if config.generate_thumbnails:
+        files = _scan_once(folder_path, config, ignore_thumbnails)
+        items = group_frame_sequences(files)
 
-        items = group_frame_sequences(scan_folder(folder_path, include_subfolders=scan_subfolders, config=config))
-        items = [MediaItem(kind="sequence", sequence_info=i) if isinstance(i, dict)
-                else MediaItem(kind="file", path=i)
-                for i in items]
-
-
-        for media in items:
-            # sequence case
-            if media.kind == "sequence":
-                generate_thumbnail_for_sequence(media.sequence_info, config=config)
-            # normal file case
+        for item in items:
+            if isinstance(item, dict):
+                generate_thumbnail_for_sequence(item, config=config)
             else:
-                create_thumbnail(media.path, config=config)
-
+                create_thumbnail(item, config=config)
 
     # --------------------------------------------------------------
     # 2) File organisation
     # --------------------------------------------------------------
     if config.enable_organiser:
+        # reuse existing items if already scanned, otherwise scan once
+        if 'items' not in locals():
+            files = _scan_once(folder_path, config, ignore_thumbnails)
+            items = group_frame_sequences(files)
+
         organise_files(
             folder_path,
             move_files=config.move_files,
             ignore_thumbnails=config.ignore_thumbnail_folders,
             config=config,
         )
+
 
     # --------------------------------------------------------------
     # 3) Report generation
@@ -105,7 +117,7 @@ def run_pipeline(folder_path, config=None):
         or config.output_excel
     ):
 
-        # Behavior-preserving: discover ALL files using scan_folder (no MediaItem filtering yet)
+        # Re-scan AFTER organiser has run so reports see new file locations (behavior preserved)
         files = scan_folder(
             folder_path,
             include_subfolders=scan_subfolders,
@@ -114,15 +126,14 @@ def run_pipeline(folder_path, config=None):
             config=config,
         )
 
-        # Wrap into MediaItem objects for internal clarity only
-        report_items = [MediaItem(kind="sequence", sequence_info=i) if isinstance(i, dict)
-                        else MediaItem(kind="file", path=i)
-                        for i in group_frame_sequences(files)]
+        items = group_frame_sequences(files)  # one grouping pass
+
 
         # Extract metadata for each item
         metadata = []
-        for media in report_items:
-            metadata.append(extract_metadata(media))
+        for item in items:
+            metadata.append(extract_metadata(item))
+
 
         # Resolve report output directory
         output_dir = config.report_output_dir or folder_path

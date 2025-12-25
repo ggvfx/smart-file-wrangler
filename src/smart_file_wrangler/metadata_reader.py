@@ -169,8 +169,20 @@ def extract_metadata(file_path):
 
     file_path = Path(file_path)
 
-    if not file_path.is_file():
-        raise ValueError(f"{file_path} is not a valid file")
+    if not file_path.exists():
+        # Create minimal legacy metadata safely for "other" files
+        return {
+            "file_path": str(file_path),
+            "file_size_bytes": file_path.stat().st_size if file_path.is_file() else None,
+            "media_type": "other",
+            "extension": file_path.suffix.lower(),
+            "resolution_px": None,
+            "duration_seconds": None,
+            "sample_rate_hz": None,
+            "mode": None,
+            "format": None,
+        }
+
 
     file_size_bytes = file_path.stat().st_size
     extension = file_path.suffix.lower()

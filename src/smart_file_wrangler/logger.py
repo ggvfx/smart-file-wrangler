@@ -3,7 +3,7 @@ logger.py
 Handles verbose output and UI-integrated logging.
 """
 
-from .config import Defaults
+from .config import Config
 
 _logger = None  # internal singleton
 

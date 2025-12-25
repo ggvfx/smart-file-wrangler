@@ -23,7 +23,6 @@ from .logger import init_logger
 from .media_item import MediaItem
 
 
-
 def organise_files(
     folder_path,
     output_dir=None,
@@ -40,7 +39,7 @@ def organise_files(
     Args:
         folder_path (Path | str): Base folder to scan.
         output_dir (Path | str | None): Output directory. Defaults to input folder.
-        move_files (bool | None): Move files instead of copying.
+        move_files (bool | None): Whether to move instead of copy. Resolved from Config if not passed.
             Must be resolved from Config or passed explicitly.
         mode (str): Organisation mode:
             - "media_type"
@@ -87,7 +86,6 @@ def organise_files(
             "move_files was not resolved from config or arguments"
     )
 
-
     # --------------------------------------------------------------
     # Scan files from input folder
     # --------------------------------------------------------------
@@ -103,9 +101,7 @@ def organise_files(
                 else MediaItem(kind="file", path=i)
                 for i in group_frame_sequences(legacy_items)]
 
-
     # do nothing here — already grouped earlier in legacy_items
-
 
     created_folders = set()
     processed_files = 0
@@ -124,10 +120,7 @@ def organise_files(
     # Existing organiser logic continues here using `item`
     # (indent all of your current folder/copy/move code under this)
     # ----------------------------------------------------------
-
-
     # pipeline continues below using `item` exactly like before
-
 
         matched_rule = None  # used only for logging string-rule matches
 
@@ -252,7 +245,6 @@ def organise_files(
                             f'→ folder "{dest_folder.name}"'
                         )
 
-
         # ==========================================================
         # REGULAR FILES
         # ==========================================================
@@ -325,7 +317,7 @@ def organise_files(
 
             destination_file_path = final_folder_path / file_path.name
 
-            # Move or copy the file
+            # Copy or move the file based on resolved config flags (move_files=False by default)
             if move_files:
                 move(file_path, destination_file_path)
                 action = "moved"

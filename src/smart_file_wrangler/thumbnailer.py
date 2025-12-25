@@ -32,15 +32,12 @@ from .logger import log
 from .media_item import MediaItem
 
 
-
 # ----------------------------------------------------------------------
 # Constants and patterns
 # ----------------------------------------------------------------------
-
 # Matches filenames that look like individual frame sequence members,
 # e.g. shot_001.exr, render.1001.png
 frame_pattern = re.compile(r".+[._-]\d+(\.[^.]+)$")
-
 
 # ----------------------------------------------------------------------
 # Public API
@@ -57,7 +54,7 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=No
         file_path (Path): Input media file.
         out_path (Path | None): Output thumbnail path.
             If None, the path is derived using get_thumbnail_path().
-        size (int | None): Maximum thumbnail dimension in pixels.
+        size (tuple[int, int] | None): Maximum thumbnail dimensions in pixels (width, height).
             If None, config.thumb_size is used.
         codec (str): Video output codec (currently unused, preserved for API stability).
     """
@@ -69,7 +66,6 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=No
     
     if isinstance(file_path, MediaItem):
         file_path = file_path.sequence_info if file_path.kind == "sequence" else file_path.path
-
 
     if size is None:
         size = config.thumb_size
@@ -118,7 +114,6 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=No
         if verbose:
             log(f"Skipping {file_path.name}: unsupported file type")
 
-
 # ----------------------------------------------------------------------
 # Image thumbnail generation
 # ----------------------------------------------------------------------
@@ -154,7 +149,6 @@ def _create_image_thumbnail(file_path, out_path, size):
     except Exception as exc:
         # Fail safely; thumbnail generation should not halt the pipeline
         print(f"Failed to create image thumbnail for {file_path}: {exc}")
-
 
 # ----------------------------------------------------------------------
 # Video thumbnail generation
@@ -193,7 +187,6 @@ def _create_video_thumbnail(file_path, out_path, size, codec):
         # Fail safely; missing codecs or corrupt files should not stop execution
         print(f"Failed to create video thumbnail for {file_path}: {exc}")
 
-
 # ----------------------------------------------------------------------
 # Folder-level helpers
 # ----------------------------------------------------------------------
@@ -201,7 +194,6 @@ def _create_video_thumbnail(file_path, out_path, size, codec):
 def generate_thumbnail_for_sequence(sequence_dict, config=None):
     if isinstance(sequence_dict, MediaItem):
         sequence_dict = sequence_dict.sequence_info
-
     """
     Generate a thumbnail for a frame sequence.
 
@@ -251,7 +243,6 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
 
     return thumb_path
 
-
 # ----------------------------------------------------------------------
 # Manual testing (isolated, behavior-safe, uses Config defaults directly)
 # ----------------------------------------------------------------------
@@ -259,11 +250,11 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
 if __name__ == "__main__":
     from .config import Config
     from .utils import scan_folder, group_frame_sequences
-    from .thumbnailer import generate_thumbnail_for_sequence, create_thumbnail
+    # MANUAL TEST ONLY — uses literal Config values, no Defaults dependency, no pipeline impact
 
     current_directory = Path(__file__).resolve().parent
     sample_media_folder = current_directory.parent.parent / "assets" / "sample_media"
-
+    
     # Build test Config using its own internal defaults (no Defaults dict)
     test_config = Config(
         recurse_subfolders=True,

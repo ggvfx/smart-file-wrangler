@@ -22,17 +22,14 @@ from pathlib import Path
 from .config import Config
 from .file_scanner import scan_folder
 from .utils import group_frame_sequences
-from .thumbnailer import (
-    generate_thumbnail_for_sequence,
-    create_thumbnail,
-)
+from .thumbnailer import (generate_thumbnail_for_sequence, create_thumbnail)
 from .organiser import organise_files
 from .metadata_reader import extract_metadata
 from .report_writer import generate_reports
 from .media_item import MediaItem
 
 
-#Internal helper: scans once for a stage, then list is reused by caller. No filtering or behavior assumptions.
+# Internal helper: scans once for a stage, then list is reused by caller. No filtering or behavior assumptions.
 def _scan_once(folder_path, config, ignore_thumbnails):
     files = scan_folder(
         folder_path,
@@ -44,19 +41,19 @@ def _scan_once(folder_path, config, ignore_thumbnails):
     return files
 
 
-
 def run_pipeline(folder_path, config=None):
     """
     Run the Smart File Wrangler pipeline on a folder.
 
-    This function executes enabled subsystems in a fixed order:
-        1) Thumbnail generation (optional)
-        2) File organisation (optional)
-        3) Report generation (optional)
-
     Args:
         folder_path (str | Path): Folder to process.
+        config (Config): Config object passed by CLI.
+
+    Notes:
+        - `folder_path` is converted to a Path internally.
+        - `config` must be passed by CLI, not constructed here.
     """
+
     # --------------------------------------------------------------
     # Validate config
     # --------------------------------------------------------------
@@ -67,6 +64,9 @@ def run_pipeline(folder_path, config=None):
         )
 
     folder_path = Path(folder_path)
+
+    # files = physical filesystem entries discovered from disk (Path or sequence dict)
+    # items = logical media units created by grouping passes (then optionally wrapped into MediaItem)
 
     # --------------------------------------------------------------
     # Resolve shared pipeline flags
@@ -99,23 +99,13 @@ def run_pipeline(folder_path, config=None):
             files = _scan_once(folder_path, config, ignore_thumbnails)
             items = group_frame_sequences(files)
 
-        organise_files(
-            folder_path,
-            move_files=config.move_files,
-            ignore_thumbnails=config.ignore_thumbnail_folders,
-            config=config,
-        )
+        organise_files(folder_path, move_files=config.move_files, ignore_thumbnails=config.ignore_thumbnail_folders, config=config)
 
 
     # --------------------------------------------------------------
     # 3) Report generation
     # --------------------------------------------------------------
-    if (
-        config.output_csv
-        or config.output_json
-        or config.output_tree
-        or config.output_excel
-    ):
+    if (config.output_csv or config.output_json or config.output_tree or config.output_excel):
 
         # Re-scan AFTER organiser has run so reports see new file locations (behavior preserved)
         files = scan_folder(
@@ -128,12 +118,10 @@ def run_pipeline(folder_path, config=None):
 
         items = group_frame_sequences(files)  # one grouping pass
 
-
         # Extract metadata for each item
         metadata = []
         for item in items:
             metadata.append(extract_metadata(item))
-
 
         # Resolve report output directory
         output_dir = config.report_output_dir or folder_path

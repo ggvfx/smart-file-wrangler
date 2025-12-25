@@ -1,10 +1,18 @@
 """
 report_writer.py
 
-Generates CSV, JSON, Excel reports, and text-based folder tree output.
+Report output generation for Smart File Wrangler.
 
-This module focuses on output generation only.
-It assumes metadata has already been extracted and filtered upstream.
+Purpose:
+- Consumes metadata rows prepared upstream
+- Writes CSV, JSON, Excel, and folder tree text outputs
+- Converts absolute paths to relative paths for reports
+- Provides sorting of report rows for stable output order
+
+Terminology:
+- metadata rows = dictionaries describing discovered files or sequences
+- folder tree = a printed view of the organised folder structure on disk
+- report items = the list of logical units passed from pipeline orchestration
 """
 
 import csv
@@ -18,11 +26,10 @@ from openpyxl.utils import get_column_letter
 from .config import Config
 from .media_item import MediaItem
 
-
-
 # ----------------------------------------------------------------------
 # Sorting helpers
 # ----------------------------------------------------------------------
+# --- Sorting is for stable report output order, not media filtering
 
 media_type_order = {
     "video": 0,
@@ -31,15 +38,25 @@ media_type_order = {
     "other": 3,
 }
 
-
 # ----------------------------------------------------------------------
 # Path and filename helpers
 # ----------------------------------------------------------------------
+# --- Relative paths are used for reports to match organised folder tree
 
 def _make_relative_path(path_string, root_folder):
     """
-    Convert an absolute path string to a path relative to root_folder.
-    If conversion fails, fall back to the original string.
+    Convert an absolute path string to a path relative to the input folder.
+
+    Args:
+        path_string (str): Original absolute file path string
+        root_folder (Path | str): Folder to make the path relative to
+
+    Returns:
+        str: A relative path string if possible, otherwise the original path
+
+    Notes:
+        - This is a pure string transformation, no filesystem scanning happens here.
+        - Errors fall back safely to original input to preserve behavior.
     """
     if not path_string:
         return ""
@@ -56,13 +73,19 @@ def _make_relative_path(path_string, root_folder):
 
 def _make_sequence_filename(metadata):
     """
-    Return the filename for reporting.
+    Get the filename for a frame sequence from its metadata row.
 
-    For frame sequences, the filename is already constructed
-    in metadata_reader.py and stored in metadata["filename"].
+    Args:
+        metadata (dict): A metadata dictionary produced upstream
+
+    Returns:
+        str: The pre-constructed sequence filename if present, otherwise empty string
+
+    Notes:
+        - Frame sequence filenames are created upstream and reused here.
+        - This function does not infer or scan for files.
     """
     return metadata.get("filename", "")
-
 
 # ----------------------------------------------------------------------
 # Shared row preparation
@@ -101,7 +124,6 @@ def _prepare_report_row(row, root_folder):
 
     return output_row
 
-
 # ----------------------------------------------------------------------
 # CSV report
 # ----------------------------------------------------------------------
@@ -109,15 +131,26 @@ def _prepare_report_row(row, root_folder):
 def write_csv_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally, no behavior change to legacy callers
     data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
-
-
     """
-    Write report data to a CSV file.
+    Write metadata rows to CSV.
 
-    - filename column always first
-    - file_path is relative
-    - file_size is human readable
+    Args:
+        data (list[Path | dict]): Legacy report items from pipeline
+        output_path (Path | str): Where to write the CSV
+        root_folder (Path | str): Root input folder for relative paths
+        config (Config): Config object providing metadata field list
+
+    Behavior:
+        - Header row is always written first
+        - filename column is first for readability
+        - file paths are made relative internally
+        - file sizes are human-readable strings, not raw bytes
+
+    Notes:
+        - This function does not scan the filesystem
+        - It preserves legacy behavior and data shape
     """
+
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -145,7 +178,6 @@ def write_csv_report(data, output_path, root_folder, config):
 
     print(f'CSV report written: "{output_path}" ({len(data)} rows)')
 
-
 # ----------------------------------------------------------------------
 # JSON report
 # ----------------------------------------------------------------------
@@ -153,8 +185,6 @@ def write_csv_report(data, output_path, root_folder, config):
 def write_json_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally
     data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
-
-
     """
     Write report data to a JSON file.
 
@@ -187,14 +217,24 @@ def write_json_report(data, output_path, root_folder, config):
 
     print(f'JSON report written: "{output_path}" ({len(output_rows)} items)')
 
-
 # ----------------------------------------------------------------------
 # Folder tree output
 # ----------------------------------------------------------------------
+# --- Tree building uses metadata rows, not raw filesystem walks
 
 def _build_tree(items):
     """
-    Build a nested dictionary representing folder structure.
+    Build a nested dictionary representing folder structure from relative metadata rows.
+
+    Args:
+        items (list[dict]): Metadata rows containing relative file_path strings
+
+    Returns:
+        dict: Nested mapping of folder → file → None
+
+    Notes:
+        - This builds a logical tree from metadata, not a disk walk
+        - The disk folder tree is generated separately upstream
     """
     tree = defaultdict(dict)
 
@@ -264,7 +304,6 @@ def write_folder_tree(items, output_path, root_folder, config):
 
     print(f'Folder tree written: "{output_path}"')
 
-
 # ----------------------------------------------------------------------
 # Excel report
 # ----------------------------------------------------------------------
@@ -272,8 +311,6 @@ def write_folder_tree(items, output_path, root_folder, config):
 def write_excel_report(data, output_path, root_folder, config):
     # unwrap MediaItem internally
     data = [i.sequence_info if isinstance(i, MediaItem) else i for i in data]
-
-
     """
     Write report data to an Excel (.xlsx) file.
 
@@ -325,7 +362,6 @@ def write_excel_report(data, output_path, root_folder, config):
     workbook.save(output_path)
     print(f'Excel report written: "{output_path}" ({len(data)} rows)')
 
-
 # ----------------------------------------------------------------------
 # Sorting
 # ----------------------------------------------------------------------
@@ -356,16 +392,9 @@ def sort_report_items(data, root_folder):
         media_order = media_type_order.get(media_type, 99)
         extension = item.get("extension", "")
 
-        return (
-            depth,
-            parent,
-            filename.lower(),
-            media_order,
-            extension.lower(),
-        )
+        return (depth, parent, filename.lower(), media_order, extension.lower())
 
     return sorted(data, key=sort_key)
-
 
 # ----------------------------------------------------------------------
 # Public entry point
@@ -384,7 +413,6 @@ def generate_reports(
     excel_enabled=False,
     config=None,
 ):
-    
     if config is None:
         raise ValueError(
             "generate_reports() now requires a Config object. "
@@ -395,37 +423,16 @@ def generate_reports(
     sorted_data = sort_report_items(metadata, input_folder)
 
     if csv_enabled:
-        write_csv_report(
-            sorted_data,
-            Path(output_dir) / "report.csv",
-            root_folder=input_folder,
-            config=config,
-        )
+        write_csv_report(sorted_data, Path(output_dir) / "report.csv", root_folder=input_folder, config=config)
 
     if json_enabled:
-        write_json_report(
-            sorted_data,
-            Path(output_dir) / "report.json",
-            root_folder=input_folder,
-            config=config,
-        )
+        write_json_report(sorted_data, Path(output_dir) / "report.json", root_folder=input_folder, config=config)
 
     if tree_enabled:
-        write_folder_tree(
-            sorted_data,
-            Path(output_dir) / "folder_tree.txt",
-            root_folder=input_folder,
-            config=config,
-        )
+        write_folder_tree(sorted_data, Path(output_dir) / "folder_tree.txt", root_folder=input_folder, config=config)
 
     if excel_enabled:
-        write_excel_report(
-            sorted_data,
-            Path(output_dir) / "report.xlsx",
-            root_folder=input_folder,
-            config=config,
-        )
-
+        write_excel_report(sorted_data, Path(output_dir) / "report.xlsx", root_folder=input_folder, config=config)
 
 # ----------------------------------------------------------------------
 # Formatting helpers

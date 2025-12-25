@@ -13,12 +13,7 @@ import json
 
 from PIL import Image
 
-from .utils import (
-    is_ffmpeg_available,
-    image_extensions,
-    video_extensions,
-    audio_extensions,
-)
+from .utils import (is_ffmpeg_available, image_extensions, video_extensions, audio_extensions)
 from .file_scanner import scan_folder
 from .config import Config
 from .media_item import MediaItem
@@ -82,7 +77,6 @@ def _populate_ffprobe_metadata(file_path, metadata):
             except Exception:
                 pass
 
-
 # ----------------------------------------------------------------------
 # Public API
 # ----------------------------------------------------------------------
@@ -98,7 +92,6 @@ def extract_metadata(file_path):
             - MediaItem: internal wrapper for either a file or sequence
     ...
     """
-
     # --- MediaItem unwrapping (behavior-safe) ---
     if isinstance(file_path, MediaItem):
         if file_path.kind == "sequence":
@@ -166,6 +159,7 @@ def extract_metadata(file_path):
     # ------------------------------------------------------------------
     # 2) NORMAL FILES
     # ------------------------------------------------------------------
+    # From here, file_path may be a legacy Path or a sequence dict (already unwrapped above)
 
     file_path = Path(file_path)
 
@@ -182,7 +176,6 @@ def extract_metadata(file_path):
             "mode": None,
             "format": None,
         }
-
 
     file_size_bytes = file_path.stat().st_size
     extension = file_path.suffix.lower()
@@ -248,7 +241,6 @@ def extract_metadata_for_folder(folder_path, config=None):
         - Applies media-type inclusion rules from config
         - Filters metadata fields based on config.metadata_fields
 
-
     Args:
         folder_path (str | Path): Folder to scan.
 
@@ -304,7 +296,6 @@ if __name__ == "__main__":
     from .config import Config
     from .utils import scan_folder, group_frame_sequences
     from .thumbnailer import generate_thumbnail_for_sequence  # only used in sequence test print
-    from .metadata_reader import extract_metadata, extract_metadata_for_folder
 
     here = Path(__file__).resolve().parent
     sample_folder = here.parent.parent / "assets" / "sample_media"

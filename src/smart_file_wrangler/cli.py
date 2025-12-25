@@ -18,7 +18,6 @@ from .config import Config
 from .pipeline import run_pipeline
 from .logger import init_logger
 
-
 # ----------------------------------------------------------------------
 # Argument parsing
 # ----------------------------------------------------------------------
@@ -146,12 +145,18 @@ def parse_args():
 
 def run_cli():
     """
-    Entry point for the Smart File Wrangler CLI.
+    Command-line entry point for Smart File Wrangler.
 
-    This function:
-    - Validates arguments
-    - Overrides config.Defaults
-    - Runs the pipeline
+    Responsibilities (thin orchestration only):
+    - Parses command line arguments
+    - Constructs a Config object using its internal defaults
+    - Applies CLI overrides into Config
+    - Invokes the pipeline exactly once
+
+    Notes:
+        - The legacy `Defaults` dictionary has been removed from runtime use.
+        - This module does not contain business logic.
+        - Public pipeline behavior is preserved.
     """
     args = parse_args()
 
@@ -162,9 +167,8 @@ def run_cli():
     if not input_folder.exists() or not input_folder.is_dir():
         raise ValueError(f"Input folder not found: {input_folder}")
 
-
     # --------------------------------------------------------------
-    # Create Config instance
+    # Construct Config instance (internal defaults only, no Defaults dict)
     # --------------------------------------------------------------
     config = Config()
 
@@ -200,7 +204,6 @@ def run_cli():
 
     if rules:
         config.filename_rules = rules
-
 
     # Thumbnails
     config.generate_thumbnails = args.thumbnails

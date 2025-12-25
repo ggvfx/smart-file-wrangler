@@ -14,7 +14,6 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
 
-
 @dataclass
 class Config:
     """
@@ -41,7 +40,6 @@ class Config:
     # Ignore generated thumbnail folders during scanning
     ignore_thumbnail_folders: bool = True
 
-
     # ------------------------------------------------------------------
     # Thumbnail generation
     # ------------------------------------------------------------------
@@ -53,11 +51,10 @@ class Config:
     thumb_images: bool = True
     thumb_videos: bool = True
 
-    # Thumbnail output settings
+    # Thumbnail output settings (size is longest edge in pixels)
     thumb_size: int = 512
     thumb_suffix: str = "_thumb"
     thumb_folder_name: str = "thumbnails"
-
 
     # ------------------------------------------------------------------
     # Metadata extraction
@@ -93,7 +90,6 @@ class Config:
     metadata_sort_by: str = "file_path"
     metadata_sort_reverse: bool = False
 
-
     # ------------------------------------------------------------------
     # Organiser behavior
     # ------------------------------------------------------------------
@@ -116,7 +112,6 @@ class Config:
     # Whether files should be moved (True) or copied (False)
     move_files: bool = False
 
-
     # ------------------------------------------------------------------
     # Reporting outputs
     # ------------------------------------------------------------------
@@ -130,7 +125,6 @@ class Config:
     # Output directory for reports
     # None = same folder as input
     report_output_dir: Optional[str] = None
-
 
     # ------------------------------------------------------------------
     # Logging and verbosity

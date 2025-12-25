@@ -69,12 +69,7 @@ def ensure_directory(path):
         path.mkdir(parents=True, exist_ok=True)
 
 
-def get_thumbnail_path(
-    file_path: Path,
-    thumb_folder_name="thumbnails",
-    thumb_suffix="_thumb",
-    thumb_ext=".png"
-) -> Path:
+def get_thumbnail_path(file_path: Path, thumb_folder_name="thumbnails", thumb_suffix="_thumb", thumb_ext=".png") -> Path:
     """
     Generate the output path for a thumbnail corresponding to a media file.
 
@@ -171,6 +166,8 @@ def filter_metadata(metadata: dict, fields: list = None) -> dict:
 def detect_frame_sequences(files, min_sequence_length=2):
     """
     Detect frame sequences in a list of file paths.
+    physical discovery + sequence grouping, returns legacy types for pipeline
+
 
     Args:
         files (list[Path or str]): List of file paths to analyse.
@@ -179,7 +176,7 @@ def detect_frame_sequences(files, min_sequence_length=2):
 
     Returns:
         list: A mixed list containing:
-            - dicts describing detected frame sequences
+            - dicts describing detected frame sequences (logical media units)
             - Path objects for standalone files
 
     Sequence dictionary format:

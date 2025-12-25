@@ -16,7 +16,7 @@ from pathlib import Path
 
 from .config import Config
 from .pipeline import run_pipeline
-from .logger import init_logger
+from .logger import init_logger, log
 
 # ----------------------------------------------------------------------
 # Argument parsing
@@ -254,9 +254,9 @@ def run_cli():
     # --------------------------------------------------------------
     # Run pipeline
     # --------------------------------------------------------------
-    print("Running Smart File Wrangler...")
+    log("Running Smart File Wrangler...", level="info")
     run_pipeline(input_folder, config)
-    print("Done.")
+    #log(f"Skipping {iter}: unsupported file type", level="warning")
 
 
 if __name__ == "__main__":

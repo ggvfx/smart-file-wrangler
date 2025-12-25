@@ -264,7 +264,7 @@ if __name__ == "__main__":
         generate_thumbnails=True,
         thumb_images=True,
         thumb_videos=True,
-        thumb_size=(400, 300),
+        thumb_size=400,
         thumb_suffix="_thumb",
         thumb_folder_name="thumbnails",
         include_media_types={"image": True, "video": True, "audio": True, "other": True},
@@ -273,7 +273,6 @@ if __name__ == "__main__":
         metadata_sort_reverse=False,
         enable_organiser=False,
         organiser_mode="copy",
-        filename_rules={},
         default_unsorted_folder="other",
         move_files=False,
         output_csv=False,
@@ -283,6 +282,7 @@ if __name__ == "__main__":
         report_output_dir=None,
         verbose=True,
     )
+
 
     print("\n--- Thumbnail generation test ---")
 

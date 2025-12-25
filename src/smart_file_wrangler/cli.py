@@ -116,6 +116,7 @@ def parse_args():
     # --------------------------------------------------------------
     # Logging
     # --------------------------------------------------------------
+    # Enable verbose logs globally (includes debug, warnings, and UI/file sinks if configured).
     parser.add_argument(
         "--verbose",
         action="store_true",
@@ -256,7 +257,6 @@ def run_cli():
     # --------------------------------------------------------------
     log("Running Smart File Wrangler...", level="info")
     run_pipeline(input_folder, config)
-    #log(f"Skipping {iter}: unsupported file type", level="warning")
 
 
 if __name__ == "__main__":

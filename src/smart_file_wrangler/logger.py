@@ -4,64 +4,97 @@ Handles verbose output and UI-integrated logging.
 """
 
 from pathlib import Path
+from typing import Optional
 
-_logger = None  # internal singleton instance
+# ----------------------------------------------------------------------
+# Log level labels (enum-like, for consistency)
+# ----------------------------------------------------------------------
+class LogLevel:
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+    DEBUG = "debug"
 
+# ----------------------------------------------------------------------
+# Internal singleton logger + central verbosity + optional file sink
+# ----------------------------------------------------------------------
+_logger: Optional["Logger"] = None
+_verbose: bool = False
+_file_sink: Optional[str] = None  # file sink path (string form)
 
+# ----------------------------------------------------------------------
+# Logger class
+# ----------------------------------------------------------------------
 class Logger:
-    def __init__(self, verbose=False, ui_callback=None):
+    def __init__(self, ui_callback=None):
         """
         Parameters:
-            verbose (bool): Show detailed logs to terminal.
             ui_callback (callable | None): Optional sink to forward logs to a GUI or UI.
         """
-        self.verbose = verbose
         self.ui_callback = ui_callback
 
-    def log(self, message, level="info"):
+    def log(self, message: str, level: str = LogLevel.INFO):
         """
-        Log a message with an optional severity level.
+        Log a message with a severity label.
 
         Parameters:
             message (str): The log message.
-            level (str): Severity tag: "info", "warning", "error", "debug".
-                         This does not change behavior, it only labels output.
+            level (str): One of LogLevel.* labels. Does not filter or change behavior.
         """
-        # terminal sink (legacy behavior preserved)
-        if self.verbose:
+        # Terminal sink (legacy behavior preserved, controlled centrally by _verbose)
+        if _verbose:
             print(f"[{level.upper()}] {message}")
 
         # UI sink if provided
         if self.ui_callback:
             self.ui_callback(f"[{level.upper()}] {message}")
 
+        # Optional file sink (non-print sink)
+        if _file_sink:
+            with open(_file_sink, "a", encoding="utf-8") as f:
+                f.write(f"[{level.upper()}] {message}\n")
 
-def init_logger(verbose=False, ui_callback=None):
+# ----------------------------------------------------------------------
+# Public initializer (call once from an entry point, sets central flags)
+# ----------------------------------------------------------------------
+def init_logger(verbose: bool = False, ui_callback=None):
     """
-    Initialize the global logger singleton once from an entry point (CLI or GUI).
+    Initialize the global logger singleton. Call once from CLI or GUI entry point.
 
     Parameters:
-        verbose (bool): Enable verbose terminal logging.
-        ui_callback (callable | None): Optional UI sink.
+        verbose (bool): Enable verbose terminal logging globally.
+        ui_callback (callable | None): Optional UI sink for GUI forwarding.
     """
-    global _logger
-    _logger = Logger(verbose=verbose, ui_callback=ui_callback)
+    global _logger, _verbose
+    _verbose = verbose  # central verbosity control
+    _logger = Logger(ui_callback)
 
-
-def log(message, *, level="info"):
+# ----------------------------------------------------------------------
+# Optional: set a file sink path (safe to call once, no other modules touched)
+# ----------------------------------------------------------------------
+def set_file_sink(path: Path | str):
     """
-    Log a message through the global logger singleton, preserving legacy print fallback.
+    Set a file path to receive log messages.
+
+    Parameters:
+        path (Path | str): Filesystem path to a log file.
+    """
+    global _file_sink
+    _file_sink = str(path)
+
+# ----------------------------------------------------------------------
+# Global log wrapper (safe to call anywhere, preserves legacy fallback)
+# ----------------------------------------------------------------------
+def log(message: str, *, level: str = LogLevel.INFO):
+    """
+    Log a message via the global logger, preserving legacy print fallback.
 
     Parameters:
         message (str): Log message.
-        level (str): Severity tag for labeling only — does not filter or change behavior.
+        level (str): Severity label (LogLevel.*). For labeling only.
     """
     if _logger:
         _logger.log(message, level)
     else:
-        # legacy fallback terminal sink (behavior preserved)
+        # Legacy fallback terminal sink (behavior preserved)
         print(f"[{level.upper()}] {message}")
-
-
-
-

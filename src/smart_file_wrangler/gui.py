@@ -1,139 +1,123 @@
-"""
-gui.py
-UI layer for Smart File Wrangler.
-"""
 import sys
 import shutil
+import subprocess
 from pathlib import Path
 
 from .config import Config
 from .pipeline import run_pipeline
 
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QPushButton,
-    QFileDialog, QTextEdit, QLabel, QProgressBar
-)
-
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QWidget
+from PySide6.QtUiTools import QUiLoader
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Smart File Wrangler")
-        self.resize(500, 340)
 
-        # 1) Construct Config once (public contract for GUI → backend)
         self.config = Config()
-
-        # 2) Detect FFmpeg once on UI construction
+        self.folder = None
         self.ffmpeg_exists = shutil.which("ffmpeg") is not None
 
-        # --- UI widgets (will later be replaced by Designer .ui) ---
+        # Load UI
+        loader = QUiLoader()
+        ui_file = Path(__file__).parent / "main_window.ui"
+        self.ui = loader.load(str(ui_file))
+        self.setCentralWidget(self.ui)
 
-        # Folder picker
-        self.pick_btn = QPushButton("Pick Folder", self)
-        self.pick_btn.move(20, 20)
-        self.pick_btn.clicked.connect(self.pick_folder)
+        # Make window match UI size
+        self.resize(self.ui.size())
 
-        # Run pipeline button
-        self.run_btn = QPushButton("Run Pipeline", self)
-        self.run_btn.move(20, 60)
-        self.run_btn.clicked.connect(self.on_run)
+        # FFmpeg status + install button visibility
+        if self.ffmpeg_exists:
+            self.ui.ffmpeg_label.setText("FFmpeg installed")
+        else:
+            self.ui.ffmpeg_label.setText("FFmpeg not installed")
 
-        # Cancel button (disabled until backend cancel is implemented)
-        self.cancel_btn = QPushButton("Cancel", self)
-        self.cancel_btn.move(140, 60)
-        self.cancel_btn.setEnabled(False)
+        self.ui.ffmpeg_label.setVisible(True)
+        self.ui.ffmpeg_btn.setVisible(not self.ffmpeg_exists)
+        self.ui.ffmpeg_btn.setEnabled(True)
+        self.ui.ffmpeg_btn.clicked.connect(self.install_ffmpeg)
 
-        # FFmpeg status label
-        self.ffmpeg_label = QLabel(self, text="")
-        self.ffmpeg_label.move(20, 100)
-        self.update_ffmpeg_label()
-
-        # Install FFmpeg button (only enabled if missing)
-        self.ffmpeg_install_btn = QPushButton("Install FFmpeg", self)
-        self.ffmpeg_install_btn.move(20, 130)
-        self.ffmpeg_install_btn.setEnabled(not self.ffmpeg_exists)
-        self.ffmpeg_install_btn.clicked.connect(self.install_ffmpeg)
-
-        # Progress bar (indeterminate for now)
-        self.progress = QProgressBar(self)
-        self.progress.move(20, 180)
-        self.progress.resize(460, 20)
-        self.progress.setRange(0, 0)  # spinning bar mode
-
-        # Log box (read-only, expandable)
-        self.log_box = QTextEdit(self)
-        self.log_box.move(20, 220)
-        self.log_box.resize(460, 100)
-        self.log_box.setReadOnly(True)
-        self.log_box.setMaximumHeight(0)  # start hidden
-
-        self.folder = None
-
-    # ------------------------------------------------------------
-    # GUI callbacks
-    # ------------------------------------------------------------
-
-    def update_ffmpeg_label(self):
-        status = "Installed" if self.ffmpeg_exists else "Not Found"
-        self.ffmpeg_label.setText(f"FFmpeg: {status}")
-
-    def update_ffmpeg_label(self):
-        self.ffmpeg_label.setText(
-            "FFmpeg: Installed" if self.ffmpeg_exists else "FFmpeg: Not Found"
-        )
+        # Log section collapsed on start
+        self.ui.log_widget.setVisible(False)
+        self.ui.expand_log_check.toggled.connect(self.on_toggle_log)
+        self.ui.organise_mode_combo.currentTextChanged.connect(self.on_mode_changed)
+        self.ui.select_folder_btn.clicked.connect(self.pick_folder)
+        self.ui.run_btn.clicked.connect(self.on_run)
 
     def pick_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, "Select Folder to Process")
+        folder = QFileDialog.getExistingDirectory(self, "Select Folder")
         if folder:
             self.folder = folder
-            self.log_box.append(f"Folder selected: {folder}")
+            self.ui.select_folder_label.setText(folder)
+
+    def on_toggle_log(self, checked):
+        self.config.expand_log = checked
+        self.ui.log_widget.setVisible(checked)
+
+    def on_mode_changed(self, text):
+        name_rule = text.lower() == "name rule"
+        self.ui.organise_string_combo.setVisible(name_rule)
+        self.ui.organise_string_lineedit.setVisible(name_rule)
 
     def on_run(self):
         if not self.folder:
-            self.log_box.append("No folder selected!")
+            self.ui.log_box.append("No folder selected!")
             return
+        
+        # Run CLI and capture terminal output
+        result = subprocess.run(
+            ["python", "-m", "smart_file_wrangler.cli", "-i", self.folder],
+            capture_output=True,
+            text=True
+        )
 
-        # Apply expand_log flag from Config
-        if self.config.expand_log:
-            self.log_box.setMaximumHeight(160)
-        else:
-            self.log_box.setMaximumHeight(0)
+        # Send captured CLI output into UI log box
+        self.ui.log_box.append(result.stdout)
 
-        self.log_box.append("Running pipeline...")
+        # --- READ UI VALUES INTO CONFIG (this is the wiring you were missing) ---
+        self.config.recurse_subfolders = self.ui.recurse_subfolders_check.isChecked()
+        self.config.expand_log = self.ui.expand_log_check.isChecked()
 
-        # Call backend entrypoint (GUI owns no core logic)
-        try:
-            run_pipeline(folder_path=self.folder, config=self.config)
-            self.log_box.append("Pipeline executed!")
-        except Exception as e:
-            self.log_box.append(f"Error: {e}")
+        self.config.enable_organiser = self.ui.organise_enable_check.isChecked()
+        self.config.organise_mode = self.ui.organise_mode_combo.currentText()
+        self.config.organise_action = "copy" if self.ui.organise_copy_radio.isChecked() else "move"
+
+        self.config.organise_string_mode = self.ui.organise_string_combo.currentText()
+        self.config.organise_string = self.ui.organise_string_lineedit.text()
+
+        self.config.generate_thumbnails = self.ui.thumbnails_enable_check.isChecked()
+        self.config.thumbnail_for_videos = self.ui.thumbnails_videos_check.isChecked()
+        self.config.thumbnail_for_images = self.ui.thumbnails_images_check.isChecked()
+        self.config.thumbnail_size = self.ui.thumbnails_size_combo.currentText()
+        self.config.thumbnail_suffix = self.ui.thumbnails_suffix_lineedit.text()
+
+        self.config.report_csv = self.ui.reports_csv_check.isChecked()
+        self.config.report_json = self.ui.reports_json_check.isChecked()
+        self.config.report_excel = self.ui.reports_excel_check.isChecked()
+        self.config.report_tree = self.ui.reports_tree_check.isChecked()
+
+        self.config.log_verbose = self.ui.log_verbose_check.isChecked()
+        # --------------------------------------------------------------
+
+        # Now run pipeline with updated Config
+        run_pipeline(self.folder, self.config)
+        self.ui.log_box.append("Pipeline executed!")
+
 
     def install_ffmpeg(self):
-        # Beginner-friendly: open official download page
         import webbrowser
         webbrowser.open("https://ffmpeg.org/download.html")
-        self.log_box.append("Opened FFmpeg download page.")
-
-    # Optional: GUI can update Config fields from UI later
-    # (checkboxes, dropdowns etc will connect here after Designer)
-
+        self.ui.log_box.append("Opened FFmpeg download page.")
 
 class SmartFileWranglerGUI:
-    """Launch the PySide6 GUI."""
-
     def launch_gui(self):
         app = QApplication(sys.argv)
         window = MainWindow()
         window.show()
         sys.exit(app.exec())
 
-
 def launch_gui():
-    """Manual launch entrypoint for GUI."""
     SmartFileWranglerGUI().launch_gui()
 
 if __name__ == "__main__":
     launch_gui()
-
-

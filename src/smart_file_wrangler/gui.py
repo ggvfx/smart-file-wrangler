@@ -7,7 +7,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from .config import Config
 from .pipeline import run_pipeline
 
-from PySide6.QtWidgets import QWidget, QTextEdit, QPushButton, QMainWindow, QFileDialog, QApplication, QRadioButton, QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout, QWidget, QCheckBox, QComboBox, QFrame, QGridLayout, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QProgressBar, QPushButton, QSizePolicy, QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QWidget, QMainWindow, QFileDialog, QApplication
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QThread, Signal, QObject, QPoint, QTimer
 
@@ -52,17 +52,17 @@ class MainWindow(QMainWindow):
         # Load UI
         loader = QUiLoader()
         ui_file = Path(__file__).parent / "main_window.ui"
-        loaded = loader.load(str(ui_file))
-        self.setCentralWidget(loaded)     # attach the real QMainWindow from .ui
-        self.ui = loaded.findChild(QWidget, "log_widget").parent()  # centralwidget that owns log_box
-        self.ui.findChild(QTextEdit, "log_box").setMinimumHeight(120)
+        self.ui = loader.load(str(ui_file))
+        self.setCentralWidget(self.ui)
+        self.ui.log_box.setMinimumHeight(120)
 
+        #self.debug_tree()
 
         # Wire signals
-        self.findChild(QPushButton, "select_folder_btn").clicked.connect(self.pick_folder)
-        self.findChild(QPushButton, "run_btn").clicked.connect(self.on_run_clicked)
-        self.findChild(QComboBox, "organise_mode_combo").currentTextChanged.connect(self.on_mode_changed)
-        self.findChild(QCheckBox, "expand_log_check").toggled.connect(self.on_toggle_log)
+        self.ui.select_folder_btn.clicked.connect(self.pick_folder)
+        self.ui.run_btn.clicked.connect(self.on_run_clicked)
+        self.ui.organise_mode_combo.currentTextChanged.connect(self.on_mode_changed)
+        self.ui.expand_log_check.toggled.connect(self.on_toggle_log)
 
         # Initial UI state
         self.apply_ffmpeg_status()
@@ -70,8 +70,8 @@ class MainWindow(QMainWindow):
         self.on_toggle_log(self.ui.expand_log_check.isChecked())
 
         # Progress bar initial (not running)
-        self.findChild(QProgressBar, "progressBar").setRange(0, 1)
-        self.findChild(QProgressBar, "progressBar").setValue(0)
+        self.ui.progressBar.setRange(0, 1)
+        self.ui.progressBar.setValue(0)
 
         # Thread handles
         self._thread = None
@@ -117,16 +117,23 @@ class MainWindow(QMainWindow):
 
         if checked:
             self.ui.log_widget.setVisible(True)
-            self.ui.log_widget.setMaximumHeight(240)
+            self.ui.log_widget.setFixedHeight(240)  # was setMaximumHeight(240)
             #QTimer.singleShot(0, lambda: self._resize_to_widget_bottom(self.ui.log_widget))
             QTimer.singleShot(0, lambda: self.resize(self.width(), 800))
             self.ui.log_widget.raise_()
 
         else:
-            self.ui.log_widget.setMaximumHeight(0)
+            self.ui.log_widget.setFixedHeight(0)    # was setMaximumHeight(0)
             self.ui.log_widget.setVisible(False)
             QTimer.singleShot(0, lambda: self._resize_to_widget_bottom(self.ui.progressBar))
 
+    def debug_tree(self, widget=None, indent=0):
+        if widget is None:
+            widget = self.ui
+        print("  " * indent + f"- {widget.objectName()} ({type(widget).__name__})")
+        for child in widget.children():
+            if isinstance(child, QWidget):
+                self.debug_tree(child, indent + 1)
 
 
 

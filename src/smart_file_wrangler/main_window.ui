@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>805</width>
-    <height>705</height>
+    <width>801</width>
+    <height>752</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,7 @@
       <x>10</x>
       <y>489</y>
       <width>781</width>
-      <height>151</height>
+      <height>200</height>
      </rect>
     </property>
     <property name="minimumSize">
@@ -32,12 +32,18 @@
     <property name="maximumSize">
      <size>
       <width>16777215</width>
-      <height>200</height>
+      <height>400</height>
      </size>
     </property>
-    <layout class="QGridLayout" name="gridLayout_7">
-     <item row="0" column="0">
+    <layout class="QVBoxLayout" name="verticalLayout_2">
+     <item>
       <widget class="QLabel" name="log_label">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="font">
         <font>
          <pointsize>10</pointsize>
@@ -49,8 +55,14 @@
        </property>
       </widget>
      </item>
-     <item row="0" column="1" alignment="Qt::AlignmentFlag::AlignRight">
+     <item>
       <widget class="QCheckBox" name="log_verbose_check">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="toolTip">
         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;verbose log output&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
@@ -62,8 +74,14 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0" colspan="2">
+     <item>
       <widget class="QTextEdit" name="log_box">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
        <property name="readOnly">
         <bool>true</bool>
        </property>
@@ -77,44 +95,40 @@
       <x>80</x>
       <y>380</y>
       <width>641</width>
-      <height>121</height>
+      <height>141</height>
      </rect>
     </property>
-    <widget class="QPushButton" name="run_btn">
-     <property name="geometry">
-      <rect>
-       <x>210</x>
-       <y>20</y>
-       <width>221</width>
-       <height>61</height>
-      </rect>
-     </property>
-     <property name="font">
-      <font>
-       <pointsize>12</pointsize>
-       <bold>true</bold>
-      </font>
-     </property>
-     <property name="toolTip">
-      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Execute the chosen processes on the selected folder&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-     </property>
-     <property name="text">
-      <string>Run</string>
-     </property>
-    </widget>
-    <widget class="QProgressBar" name="progressBar">
-     <property name="geometry">
-      <rect>
-       <x>70</x>
-       <y>90</y>
-       <width>511</width>
-       <height>24</height>
-      </rect>
-     </property>
-     <property name="value">
-      <number>24</number>
-     </property>
-    </widget>
+    <layout class="QVBoxLayout" name="verticalLayout_3">
+     <item>
+      <widget class="QPushButton" name="run_btn">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>60</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+         <bold>true</bold>
+        </font>
+       </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Execute the chosen processes on the selected folder&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>Run</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QProgressBar" name="progressBar">
+       <property name="value">
+        <number>24</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
    <widget class="QWidget" name="reports_widget" native="true">
     <property name="geometry">
@@ -773,7 +787,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>805</width>
+     <width>801</width>
      <height>33</height>
     </rect>
    </property>

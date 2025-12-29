@@ -7,9 +7,9 @@ from contextlib import redirect_stdout, redirect_stderr
 from .config import Config
 from .pipeline import run_pipeline
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PySide6.QtWidgets import QWidget, QTextEdit, QPushButton, QMainWindow, QFileDialog, QApplication, QRadioButton, QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout, QWidget, QCheckBox, QComboBox, QFrame, QGridLayout, QLabel, QLineEdit, QMainWindow, QMenu, QMenuBar, QProgressBar, QPushButton, QSizePolicy, QSpacerItem, QStatusBar, QTextEdit, QVBoxLayout, QWidget
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QThread, Signal, QObject
+from PySide6.QtCore import QThread, Signal, QObject, QPoint, QTimer
 
 
 # -----------------------------
@@ -52,35 +52,42 @@ class MainWindow(QMainWindow):
         # Load UI
         loader = QUiLoader()
         ui_file = Path(__file__).parent / "main_window.ui"
-        self.ui = loader.load(str(ui_file))
-        self.setCentralWidget(self.ui)
-        self.resize(self.ui.size())
+        loaded = loader.load(str(ui_file))
+        self.setCentralWidget(loaded)     # attach the real QMainWindow from .ui
+        self.ui = loaded.findChild(QWidget, "log_widget").parent()  # centralwidget that owns log_box
+        self.ui.findChild(QTextEdit, "log_box").setMinimumHeight(120)
+
 
         # Wire signals
-        self.ui.select_folder_btn.clicked.connect(self.pick_folder)
-        self.ui.run_btn.clicked.connect(self.on_run_clicked)
-        self.ui.organise_mode_combo.currentTextChanged.connect(self.on_mode_changed)
-        self.ui.expand_log_check.toggled.connect(self.on_expand_log_toggled)
+        self.findChild(QPushButton, "select_folder_btn").clicked.connect(self.pick_folder)
+        self.findChild(QPushButton, "run_btn").clicked.connect(self.on_run_clicked)
+        self.findChild(QComboBox, "organise_mode_combo").currentTextChanged.connect(self.on_mode_changed)
+        self.findChild(QCheckBox, "expand_log_check").toggled.connect(self.on_toggle_log)
 
         # Initial UI state
         self.apply_ffmpeg_status()
         self.on_mode_changed(self.ui.organise_mode_combo.currentText())
-        self.on_expand_log_toggled(self.ui.expand_log_check.isChecked())
+        self.on_toggle_log(self.ui.expand_log_check.isChecked())
 
         # Progress bar initial (not running)
-        self.ui.progressBar.setRange(0, 1)
-        self.ui.progressBar.setValue(0)
+        self.findChild(QProgressBar, "progressBar").setRange(0, 1)
+        self.findChild(QProgressBar, "progressBar").setValue(0)
 
         # Thread handles
         self._thread = None
         self._worker = None
 
         self.show()
+        self.on_toggle_log(self.ui.expand_log_check.isChecked())
+        QTimer.singleShot(0, lambda: self._resize_to_widget_bottom(self.ui.progressBar))
 
-        # collapse window under progress bar if Expand Log is off
-        if not self.config.expand_log:
-            h = self.ui.progressBar.y() + self.ui.progressBar.height() + 20
-            self.resize(self.width(), h)
+
+
+    def _resize_to_widget_bottom(self, widget, padding=24):
+        # bottom-left of widget in MainWindow coordinate space
+        bottom_left = widget.mapTo(self, QPoint(0, widget.height()))
+        self.resize(self.width(), bottom_left.y() + padding)
+
 
 
     # -----------------------------
@@ -105,19 +112,22 @@ class MainWindow(QMainWindow):
         self.ui.organise_string_combo.setVisible(is_name_rule)
         self.ui.organise_string_lineedit.setVisible(is_name_rule)
 
-    def on_expand_log_toggled(self, checked):
+    def on_toggle_log(self, checked: bool):
         self.config.expand_log = checked
-        self.ui.log_widget.setVisible(True)
-        self.ui.log_widget.setMaximumHeight(200 if checked else 0)
 
         if checked:
-            # expand window down to fit log contents
-            bottom = self.ui.log_widget.y() + self.ui.log_widget.height() + 40
-            self.resize(self.width(), bottom)
+            self.ui.log_widget.setVisible(True)
+            self.ui.log_widget.setMaximumHeight(240)
+            #QTimer.singleShot(0, lambda: self._resize_to_widget_bottom(self.ui.log_widget))
+            QTimer.singleShot(0, lambda: self.resize(self.width(), 800))
+            self.ui.log_widget.raise_()
+
         else:
-            # collapse window back up to just under progress bar
-            h = self.ui.progressBar.y() + self.ui.progressBar.height() + 20
-            self.resize(self.width(), h)
+            self.ui.log_widget.setMaximumHeight(0)
+            self.ui.log_widget.setVisible(False)
+            QTimer.singleShot(0, lambda: self._resize_to_widget_bottom(self.ui.progressBar))
+
+
 
 
     def pick_folder(self):

@@ -27,7 +27,7 @@ from collections import defaultdict
 # Local imports
 # ----------------------------------------------------------------------
 
-from .config import Config
+from .config import Config as WranglerConfig
 
 
 # ----------------------------------------------------------------------
@@ -89,9 +89,9 @@ def get_thumbnail_path(file_path: Path, thumb_folder_name="thumbnails", thumb_su
           but should be kept in mind when reusing this function.
     """
     if thumb_folder_name is None:
-        thumb_folder_name = Config().include_media_types.get("thumb_folder_name", "thumbnails")
+        thumb_folder_name = WranglerConfig().include_media_types.get("thumb_folder_name", "thumbnails")
     if thumb_suffix is None:
-        thumb_suffix = Config().include_media_types.get("thumb_suffix", "_thumb")
+        thumb_suffix = WranglerConfig().include_media_types.get("thumb_suffix", "_thumb")
 
 
     thumb_dir = file_path.parent / thumb_folder_name
@@ -143,7 +143,7 @@ def filter_metadata(metadata: dict, fields: list = None) -> dict:
     Args:
         metadata (dict): Full metadata dictionary.
         fields (list, optional): List of keys to retain. If None, defaults
-            to Defaults["metadata_fields"].
+            to `Config.metadata_fields` via WranglerConfig().
 
     Returns:
         dict: Filtered metadata dictionary containing only requested keys.
@@ -154,7 +154,7 @@ def filter_metadata(metadata: dict, fields: list = None) -> dict:
         - If fields is None, this function implicitly depends on Defaults.
     """
     if fields is None:
-        fields = Config().metadata_fields
+        fields = WranglerConfig().metadata_fields
 
     return {key: value for key, value in metadata.items() if key in fields}
 

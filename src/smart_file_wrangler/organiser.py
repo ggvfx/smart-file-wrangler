@@ -47,6 +47,7 @@ def organise_files(
         rules (list[dict] | None): String-matching rules for "string_rule" mode.
         default_folder (str): Folder name for files that match no rule.
         ignore_thumbnails (bool): Whether to skip thumbnail folders when scanning.
+        config (Config): **Required.** Must be constructed and passed by the CLI or caller, never created inside this module.
     """
 
     # Resolve values from config if provided

@@ -19,7 +19,6 @@ execution order and feature activation.
 
 from pathlib import Path
 
-from .config import Config
 from .file_scanner import scan_folder
 from .utils import group_frame_sequences
 from .thumbnailer import (generate_thumbnail_for_sequence, create_thumbnail)

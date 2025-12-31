@@ -294,7 +294,8 @@ def extract_metadata_for_folder(folder_path, config=None):
 
 if __name__ == "__main__":
     from .config import Config
-    from .utils import scan_folder, group_frame_sequences
+    from .utils import group_frame_sequences
+    from .file_scanner import scan_folder
     from .thumbnailer import generate_thumbnail_for_sequence  # only used in sequence test print
 
     here = Path(__file__).resolve().parent

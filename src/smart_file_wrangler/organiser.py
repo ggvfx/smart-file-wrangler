@@ -37,7 +37,7 @@ def organise_files(
 
     Args:
         folder_path (Path | str): Base folder to scan.
-        output_dir (Path | str | None): Output directory. Defaults to input folder.
+        output_dir (Path | str | None): Output directory for organised files. Defaults to input folder.
         move_files (bool | None): Whether to move instead of copy. Resolved from Config if not passed.
             Must be resolved from Config or passed explicitly.
         mode (str): Organisation mode:

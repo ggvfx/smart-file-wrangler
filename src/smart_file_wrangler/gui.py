@@ -172,7 +172,15 @@ class MainWindow(QMainWindow):
         elif mode == "file extension":
             c.organiser_mode = "extension"
         elif mode == "name rule":
-            c.organiser_mode = "filename_rule"
+            c.organiser_mode = "string_rule"
+
+        # Capture rule string from UI when in string_rule mode
+        if c.organiser_mode == "string_rule":
+            rule_text = self.ui.organise_string_lineedit.text().strip().lower()
+            if rule_text:
+                c.filename_rules = [{"type": self.ui.organise_string_combo.currentText().strip().lower(), "value": rule_text}]
+            else:
+                c.filename_rules = []  
 
         c.move_files = self.ui.organise_move_radio.isChecked()
 

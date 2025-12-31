@@ -66,6 +66,8 @@ def organise_files(
             "organise_files() now requires a Config object. "
             "Pipeline must pass config explicitly."
         )
+    
+    mode = config.organiser_mode
 
     # --------------------------------------------------------------
     # Early exit if organiser is disabled
@@ -157,8 +159,8 @@ def organise_files(
             matched_rule = None
 
             # Determine folder based on string rules if enabled
-            if mode == "string_rule" and rules:
-                for rule in rules:
+            if mode == "string_rule":
+                for rule in (rules or []):
                     rule_type = rule.get("type")
                     rule_value = rule.get("value", "").lower()
 
@@ -256,8 +258,8 @@ def organise_files(
             # ------------------------------------------------------
             # String rule mode
             # ------------------------------------------------------
-            if mode == "string_rule" and rules:
-                for rule in rules:
+            if mode == "string_rule":
+                for rule in (rules or []):
                     rule_type = rule.get("type")
                     rule_value = rule.get("value", "").lower()
 

@@ -3,20 +3,14 @@ media_item.py
 
 Internal data object representing a discovered filesystem entry.
 
-Purpose:
-- Provides a single, unambiguous container for media discovery results
-- Replaces raw `Path` and `dict` primitives incrementally across the project
-- Preserves behavior by carrying legacy values without adding logic
+This class is part of a modular media-processing pipeline. It provides
+a single, unambiguous container to wrap either:
 
-Fields:
-- kind (Literal["file", "sequence"]): Whether this item is a single file or a frame sequence
-- path (Path | None): Path to a single file (None if sequence)
-- sequence_info (dict | None): Sequence metadata row (None if single file)
+- A real filesystem file (`Path` object`), OR
+- A detected frame sequence (`dict` record containing sequence metadata)
 
-Notes:
-- This is a pure data container with no methods or behavior assumptions
-- It is not coupled to pipeline logic or other modules
-- It does not filter, transform, or scan the filesystem
+It intentionally contains **no methods or logic** — it only stores data
+to keep other modules simple and clear.
 """
 
 from dataclasses import dataclass
@@ -25,6 +19,27 @@ from typing import Literal
 
 @dataclass
 class MediaItem:
+    """
+    A simple container representing one discovered media item.
+
+    Attributes:
+        kind (Literal["file", "sequence"]):
+            - "file" → this item represents a single real file on disk
+            - "sequence" → this item represents a frame sequence pattern
+
+        path (Path | None):
+            - Stores the filesystem path if `kind == "file"`
+            - Must be `None` if `kind == "sequence"`
+
+        sequence_info (dict | None):
+            - Stores sequence metadata if `kind == "sequence"`
+            - Must be `None` if `kind == "file"`
+
+    Example:
+        MediaItem(kind="file", path=Path("/tmp/video.mp4"))
+        MediaItem(kind="sequence", sequence_info={"start": 1001, "end": 1050})
+    """
     kind: Literal["file", "sequence"]
     path: Path | None = None
     sequence_info: dict | None = None
+

@@ -171,7 +171,7 @@ def _create_video_thumbnail(file_path, out_path, size, codec):
         # - 'thumbnail' filter selects a representative frame
         # - 'scale' resizes the frame to the requested size
         command = [
-            "ffmpeg",
+            "ffmpeg", "-y",
             "-hide_banner",
             "-loglevel", "error",
             "-i", str(file_path),

@@ -259,5 +259,7 @@ def run_cli():
     run_pipeline(input_folder, config)
 
 
+
+
 if __name__ == "__main__":
     run_cli()

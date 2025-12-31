@@ -25,6 +25,7 @@ from .thumbnailer import (generate_thumbnail_for_sequence, create_thumbnail)
 from .organiser import organise_files
 from .metadata_reader import extract_metadata
 from .report_writer import generate_reports
+from .logger import log
 
 
 # Internal helper: scans once for a stage, then list is reused by caller. No filtering or behavior assumptions.
@@ -79,6 +80,7 @@ def run_pipeline(folder_path, config=None):
     # 1) Thumbnail generation
     # --------------------------------------------------------------
     if config.generate_thumbnails:
+        log("Starting Thumbnails", level="INFO")
         files = _scan_once(folder_path, config, ignore_thumbnails)
         items = group_frame_sequences(files)
 
@@ -88,10 +90,14 @@ def run_pipeline(folder_path, config=None):
             else:
                 create_thumbnail(item, config=config)
 
+        log("Thumbnails Complete", level="INFO")
+
+
     # --------------------------------------------------------------
     # 2) File organisation
     # --------------------------------------------------------------
     if config.enable_organiser:
+        log("Starting Organiser", level="INFO")
         # reuse existing items if already scanned, otherwise scan once
         if 'items' not in locals():
             files = _scan_once(folder_path, config, ignore_thumbnails)
@@ -99,12 +105,14 @@ def run_pipeline(folder_path, config=None):
 
         organise_files(folder_path, move_files=config.move_files, ignore_thumbnails=config.ignore_thumbnail_folders, config=config)
 
+        log("Organiser Complete", level="INFO")
+
 
     # --------------------------------------------------------------
     # 3) Report generation
     # --------------------------------------------------------------
     if (config.output_csv or config.output_json or config.output_tree or config.output_excel):
-
+        log("Starting Reports", level="INFO")
         # Re-scan AFTER organiser has run so reports see new file locations (behavior preserved)
         files = scan_folder(
             folder_path,
@@ -137,6 +145,8 @@ def run_pipeline(folder_path, config=None):
             tree_enabled=config.output_tree,
             config=config,
         )
+
+        log("Reports Complete", level="INFO")
 
 
 # ----------------------------------------------------------------------

@@ -88,6 +88,9 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Log output box&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
        <property name="readOnly">
         <bool>true</bool>
        </property>
@@ -99,9 +102,9 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>380</y>
+      <y>390</y>
       <width>641</width>
-      <height>141</height>
+      <height>131</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -174,6 +177,9 @@
        <kerning>true</kerning>
       </font>
      </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The feature to create reports. These will be put in the selected folder and data reflects path after organisation, if that feature is enabled.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
      <property name="text">
       <string>Output Reports</string>
      </property>
@@ -193,6 +199,9 @@
      <layout class="QGridLayout" name="gridLayout_3">
       <item row="0" column="2">
        <widget class="QCheckBox" name="reports_json_check">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output Json report (incl media metadata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>JSON</string>
         </property>
@@ -219,6 +228,9 @@
       </item>
       <item row="0" column="4">
        <widget class="QCheckBox" name="reports_excel_check">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Output excel report (incl media metadata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Excel</string>
         </property>
@@ -255,6 +267,9 @@
       </item>
       <item row="0" column="0">
        <widget class="QCheckBox" name="reports_csv_check">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;output Comma Separated Values report (incl media metadata)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>CSV</string>
         </property>
@@ -303,6 +318,9 @@
      <layout class="QGridLayout" name="gridLayout_2">
       <item row="0" column="0">
        <widget class="QCheckBox" name="thumbnails_videos_check">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select to create thumbnails for video files. Please note, frame sequences are treated as video files.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>For Videos</string>
         </property>
@@ -313,6 +331,9 @@
       </item>
       <item row="0" column="2">
        <widget class="QLabel" name="thumbnails_size_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Horizontal size of thumbnails. Smart File Wrangler will scale thumbnails to this width maintaining aspect ratio. Lanczos image scaling used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Thumbnail Size</string>
         </property>
@@ -320,6 +341,9 @@
       </item>
       <item row="0" column="3">
        <widget class="QComboBox" name="thumbnails_size_combo">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Horizontal size of thumbnails. Smart File Wrangler will scale thumbnails to this width maintaining aspect ratio. Lanczos image scaling used.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="currentIndex">
          <number>4</number>
         </property>
@@ -367,6 +391,9 @@
       </item>
       <item row="1" column="3">
        <widget class="QLineEdit" name="thumbnails_suffix_lineedit">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;suffix that should be added to generated thumbnails&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>_thumb</string>
         </property>
@@ -374,6 +401,9 @@
       </item>
       <item row="1" column="0">
        <widget class="QCheckBox" name="thumbnails_images_check">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select to create thumbnails for image files. Please note, frame sequences are treated as video files.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>For Images</string>
         </property>
@@ -384,6 +414,9 @@
       </item>
       <item row="1" column="2">
        <widget class="QLabel" name="thumbnails_suffix_label">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;suffix that should be added to generated thumbnails&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Thumbnail Suffix</string>
         </property>
@@ -418,6 +451,9 @@
        <pointsize>12</pointsize>
        <bold>true</bold>
       </font>
+     </property>
+     <property name="toolTip">
+      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;The feature to generate thumbnails for video and image. These will be placed in a &amp;quot;thumbnails&amp;quot; folder within the containing directory.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
      </property>
      <property name="text">
       <string>Create Thumbnails</string>
@@ -485,7 +521,11 @@
      </property>
      <layout class="QGridLayout" name="gridLayout">
       <item row="1" column="5">
-       <widget class="QLineEdit" name="organise_string_lineedit"/>
+       <widget class="QLineEdit" name="organise_string_lineedit">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;user string input&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+       </widget>
       </item>
       <item row="1" column="0">
        <widget class="QLabel" name="organise_mode_label">
@@ -512,6 +552,9 @@
       </item>
       <item row="0" column="0">
        <widget class="QRadioButton" name="organise_move_radio">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select if you want files to be moved into new folders&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Move</string>
         </property>
@@ -522,6 +565,9 @@
       </item>
       <item row="1" column="2">
        <widget class="QComboBox" name="organise_mode_combo">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Organise mode decides how the files will be filtered and copied/moved to new folders. Current options include media type (video, image, audio and other), file extension (e. png, jpg, docx etc) or via a filename filter (starts with or contains). Please note, frame sequences are treated as video files.&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <item>
          <property name="text">
           <string>media type</string>
@@ -541,6 +587,9 @@
       </item>
       <item row="1" column="4">
        <widget class="QComboBox" name="organise_string_combo">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Filename filter options&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <item>
          <property name="text">
           <string>starts with</string>
@@ -587,6 +636,9 @@
       </item>
       <item row="0" column="2">
        <widget class="QRadioButton" name="organise_copy_radio">
+        <property name="toolTip">
+         <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Select if you want files to be copied into new folders&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
         <property name="text">
          <string>Copy</string>
         </property>

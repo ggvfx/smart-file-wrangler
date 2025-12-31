@@ -192,8 +192,6 @@ def _create_video_thumbnail(file_path, out_path, size, codec):
 # ----------------------------------------------------------------------
 
 def generate_thumbnail_for_sequence(sequence_dict, config=None):
-    if isinstance(sequence_dict, MediaItem):
-        sequence_dict = sequence_dict.sequence_info
     """
     Generate a thumbnail for a frame sequence.
 
@@ -205,9 +203,13 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
 
     if config is None:
         raise ValueError(
-            "thumbnailer functions now require a Config object. "
+            "generate_thumbnail_for_sequence() requires a Config object. "
             "Pipeline must pass config explicitly."
         )
+
+    # NEW: make frame-sequence thumbnails depend on For Videos only
+    if not config.thumb_videos:
+        return None  # skip sequences unless "For Videos" is checked
 
     frames = sequence_dict["frames"]
     folder = sequence_dict["folder"]
@@ -218,6 +220,7 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
     if not frames:
         return None
 
+    # Choose middle frame
     middle_index = len(frames) // 2
     middle_frame_number = frames[middle_index]
 
@@ -233,7 +236,8 @@ def generate_thumbnail_for_sequence(sequence_dict, config=None):
         thumb_suffix=config.thumb_suffix,
     )
 
-    create_thumbnail(frame_path, out_path=thumb_path, config=config)
+    #create_thumbnail(frame_path, out_path=thumb_path, config=config)
+    _create_image_thumbnail(frame_path, thumb_path, config.thumb_size)
 
     if config.verbose:
         print(

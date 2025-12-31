@@ -56,7 +56,7 @@ def create_thumbnail(file_path, out_path=None, size=None, codec="mp4", config=No
             If None, the path is derived using get_thumbnail_path().
         size (tuple[int, int] | None): Maximum thumbnail dimensions in pixels (width, height).
             If None, config.thumb_size is used.
-        codec (str): Video output codec (currently unused, preserved for API stability).
+        codec (str): Video output codec (currently unused, preserved so existing code examples don’t break).
     """
     if config is None:
         raise ValueError(
@@ -130,8 +130,8 @@ def _create_image_thumbnail(file_path, out_path, size):
         with Image.open(file_path) as img:
             original_width, original_height = img.size
 
-            # Scale so that the largest dimension matches `size`
-            scale_factor = size / max(original_width, original_height)
+            # Scale using horizontal (width) dimension only, preserve aspect ratio
+            scale_factor = size / original_width
             new_width = int(original_width * scale_factor)
             new_height = int(original_height * scale_factor)
 

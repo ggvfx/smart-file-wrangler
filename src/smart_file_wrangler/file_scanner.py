@@ -32,7 +32,7 @@ def scan_folder(root_path, include_subfolders=None, file_types=None, ignore_thum
     Scan a folder and return all discovered files.
 
     Args:
-        folder (Path): Folder to scan
+        root_path (str | Path): Folder to scan.
         include_subfolders (bool): Whether to recurse into subfolders
         config (Config | None): Optional config used only for default recursion flag
 

@@ -1,6 +1,22 @@
 """
 logger.py
-Handles verbose output and UI-integrated logging.
+
+Central logging utility for Smart File Wrangler.
+
+This module provides:
+  - A global logger singleton initialised once by CLI or GUI
+  - Optional verbose terminal output (falls back to print when disabled)
+  - Optional UI log forwarding via callback (for PySide GUI)
+  - Optional file sink support (append-only log file)
+
+Key notes:
+  - `init_logger()` must be called once before logging
+  - This module performs **no media scanning or filtering**
+  - It only labels and routes log messages to enabled outputs
+
+Typical usage:
+    init_logger(verbose=True)
+    log("Something happened", level=LogLevel.INFO)
 """
 
 from pathlib import Path
@@ -94,7 +110,7 @@ def log(message: str, *, level: str = LogLevel.INFO):
         level (str): Severity label (LogLevel.*). For labeling only.
     """
     if _logger:
-        _logger.log(message, level)
+        _logger.log(message, level=level)
     else:
         # Legacy fallback terminal sink (behavior preserved)
         print(f"[{level.upper()}] {message}")

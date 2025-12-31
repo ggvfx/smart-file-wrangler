@@ -42,7 +42,7 @@ media_type_order = {
 # ----------------------------------------------------------------------
 # --- Relative paths are used for reports to match organised folder tree
 
-def _make_relative_path(path_string, root_folder):
+def _make_relative_path(path_string: str, root_folder: Path | str) -> str:
     """
     Convert an absolute path string to a path relative to the input folder.
 

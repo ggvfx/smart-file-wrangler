@@ -126,6 +126,16 @@ def organise_files(
 
         matched_rule = None  # used only for logging string-rule matches
 
+        # Normalize UI rule type to organiser expected values
+        if isinstance(rules, list):
+            for rule in rules:
+                ui_rule_mode = rule.get("type", "").strip().lower()
+                if ui_rule_mode == "starts with":
+                    rule["type"] = "starts_with"
+                elif ui_rule_mode == "contains":
+                    rule["type"] = "contains"
+
+
         # ----------------------------------------------------------
         # Skip files inside thumbnail folders
         # ----------------------------------------------------------
@@ -156,7 +166,6 @@ def organise_files(
             seq_name_lower = seq_name.lower()
 
             destination_folder = None
-            matched_rule = None
 
             # Determine folder based on string rules if enabled
             if mode == "string_rule":

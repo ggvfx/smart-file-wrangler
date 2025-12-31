@@ -8,6 +8,10 @@ Purpose:
 - Returns physical filesystem entries (Path objects)
 - Delegates sequence grouping to utils
 - Wraps results into internal MediaItem objects later
+Internal wrapping into `MediaItem` happens **only** in:
+   - `_items_to_media_items()`
+   - `scan_media_items()`
+ `scan_folder()` and `scan_files()` return legacy types (`Path | dict`) unchanged.
 
 Terminology:
 - files = physical filesystem entries on disk

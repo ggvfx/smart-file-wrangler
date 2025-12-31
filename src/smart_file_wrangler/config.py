@@ -19,9 +19,9 @@ class Config:
     """
     Runtime configuration for a single Smart File Wrangler run.
 
-    This dataclass mirrors the Defaults dictionary exactly.
-    It exists to replace global mutable Defaults at runtime,
-    while preserving identical behavior and meaning.
+    This dataclass holds settings for **one folder processing run**.
+    The legacy global `Defaults` dictionary was removed from runtime use.
+    `Config` contains no media logic — it is only a passive container.
     """
 
     # ------------------------------------------------------------------
@@ -102,7 +102,7 @@ class Config:
     organiser_mode: str = "media_type"
 
     # Filename-based organiser rules
-    # Only used if organiser_mode == "filename_rule"
+    # Only used if organiser_mode == "string_rule"
     # Example rule: {"type": "contains", "value": "SEF"}
     filename_rules: List[Dict] = field(default_factory=lambda: [])
 

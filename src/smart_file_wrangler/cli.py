@@ -3,6 +3,9 @@ cli.py
 
 Command-line interface for Smart File Wrangler.
 
+This file only parses arguments and passes config into the pipeline.
+It does NOT group files, generate thumbnails, or organise media itself.
+
 This CLI is intentionally thin. It is responsible only for:
 - Parsing command-line arguments
 - Constructing a Config object from defaults and CLI overrides
@@ -23,6 +26,10 @@ from .logger import init_logger, log
 # ----------------------------------------------------------------------
 
 def parse_args():
+    """
+    Parse CLI arguments for Smart File Wrangler.
+    Returns an argparse.Namespace with no business logic applied.
+    """
     parser = argparse.ArgumentParser(
         description="Smart File Wrangler - Modular media automation tool."
     )

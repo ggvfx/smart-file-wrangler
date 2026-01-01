@@ -1,6 +1,1 @@
-# Smart File Wrangler dependencies
-pillow
-moviepy
-# Uncomment one of the GUI options:
-# streamlit
-# PySide6
+openpyxl==3.1.5pillow==12.0.0PySide6==6.10.1moviepy==1.0.3 

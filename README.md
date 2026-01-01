@@ -38,6 +38,9 @@ If `ffmpeg` is *not installed*:
 - The pipeline continues normally ✔
 - Terminal output falls back to simple `print()` logging intentionally ✔
 
+Option included for installing ffmpeg (automatically if deoendencies met, otherwise will open webpage for manual install).
+###Smart File Wrangler must be restarted after ffmpeg install
+
 ---
 
 ## Internal data model: `MediaItem`

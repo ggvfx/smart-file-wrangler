@@ -1,6 +1,8 @@
 """
 main.py
+
 Entry point for Smart File Wrangler.
+
 Determines whether to run CLI or GUI, and manages modular workflows:
 - Full workflow
 - Report only

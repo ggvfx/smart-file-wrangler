@@ -10,10 +10,17 @@ Values here are intended to be overridden by CLI arguments or future GUI input.
 This module contains configuration only — no runtime logic.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 from dataclasses import dataclass, field
 from typing import List, Optional, Dict
 
 
+# ----------------------------------------------------------------------
+# Config
+# ----------------------------------------------------------------------
 @dataclass
 class Config:
     """

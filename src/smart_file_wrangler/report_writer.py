@@ -15,6 +15,10 @@ Terminology:
 - report items = the list of logical units passed from pipeline orchestration
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 import csv
 import json
 from pathlib import Path
@@ -23,7 +27,11 @@ from collections import defaultdict
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 from .media_item import MediaItem
+
 
 # ----------------------------------------------------------------------
 # Sorting helpers

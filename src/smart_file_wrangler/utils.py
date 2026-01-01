@@ -3,15 +3,14 @@ utils.py
 
 Shared helper functions for Smart File Wrangler.
 
-This module contains small, reusable utilities used across multiple parts
-of the application. These helpers are intentionally stateless, with the
-exception of a few functions that read default values from config.Defaults.
+This module contains reusable helper functions used across the project.
+It provides deterministic, dependency-free utilities for media pipelines.
 
-NOTE:
-- Some helpers depend implicitly on Defaults from config.py.
-- This module currently mixes filesystem helpers, environment checks,
-  and media-domain utilities. This is intentional for now and flagged
-  as a future refactor opportunity.
+Responsibilities:
+- OS and environment detection (e.g., FFmpeg availability)
+- File path helpers (naming, safe folder resolution)
+- Small pure functions shared by CLI, GUI, and pipeline
+- Contains no feature logic, business rules, or external services
 """
 
 # ----------------------------------------------------------------------

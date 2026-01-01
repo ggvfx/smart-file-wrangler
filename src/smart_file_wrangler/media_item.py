@@ -13,10 +13,18 @@ It intentionally contains **no methods or logic** — it only stores data
 to keep other modules simple and clear.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+
+# ----------------------------------------------------------------------
+# Dataclass
+# ----------------------------------------------------------------------
 @dataclass
 class MediaItem:
     """

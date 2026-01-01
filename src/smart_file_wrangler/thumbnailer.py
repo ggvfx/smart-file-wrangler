@@ -14,12 +14,19 @@ This module performs thumbnail generation only.
 It does not scan for metadata or organise files.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 from pathlib import Path
 import subprocess
 import re
 
 from PIL import Image
 
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 from .utils import (
     is_ffmpeg_available,
     image_extensions,

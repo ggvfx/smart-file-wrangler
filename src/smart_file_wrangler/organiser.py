@@ -3,17 +3,30 @@ organiser.py
 
 Moves or copies files into structured folders.
 
-Supports:
-- Organising by media type (image, video, audio, other)
-- Organising by file extension
-- Organising by user-defined string rules ("contains", "starts_with")
+This module performs deterministic file organisation for a single target folder.
+It copies or moves media into local directories based on user-selected rules.
+
+Responsibilities:
+- Copy or move files into folders by:
+    • media type (image, video, audio, other)
+    • extension (e.g., "png/", "mp4/")
+    • string rules ("starts_with", "contains")
+- Use the shared `Config` object for all decisions
 - Recursive subfolder creation
 - Handling unmatched files (placed in a default folder)
-- Optional verbose logging with summary output
+- Ignore thumbnails when requested without modifying upstream scans
+- Never call external services or change file contents
 """
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
 
 from pathlib import Path
 from shutil import copy2, move
+
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 
 from .file_scanner import scan_folder
 from .metadata_reader import extract_metadata
@@ -21,6 +34,10 @@ from .config import Config
 from .utils import group_frame_sequences
 from .media_item import MediaItem
 
+
+# ----------------------------------------------------------------------
+# Public API
+# ----------------------------------------------------------------------
 
 def organise_files(
     folder_path,

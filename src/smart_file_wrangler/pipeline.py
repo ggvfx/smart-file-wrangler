@@ -17,8 +17,15 @@ The pipeline contains no business logic. It only controls
 execution order and feature activation.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 from pathlib import Path
 
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 from .file_scanner import scan_folder
 from .utils import group_frame_sequences
 from .thumbnailer import (generate_thumbnail_for_sequence, create_thumbnail)
@@ -39,6 +46,10 @@ def _scan_once(folder_path, config, ignore_thumbnails):
     )
     return files
 
+
+# ----------------------------------------------------------------------
+# Public API
+# ----------------------------------------------------------------------
 
 def run_pipeline(folder_path, config=None):
     """

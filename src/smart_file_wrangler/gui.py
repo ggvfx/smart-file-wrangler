@@ -1,15 +1,39 @@
+"""
+gui.py
+
+This module provides the graphical interface for the Smart File Wrangler tool.
+The UI was built using Qt Designer (`main_window.ui`) and loaded at runtime.
+
+Responsibilities:
+- Let the user select a folder and organiser, thumbnail and report settings
+- Run the pipeline without blocking the UI thread
+- Display logs and progress updates
+- Trigger FFmpeg installation when requested (restart required on Windows)
+
+Constraints:
+- Contains no media-processing business logic (handled by pipeline and subsystems)
+- Does not modify features or behavior, only coordinates UI actions
+"""
+
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
 import sys
-import shutil, subprocess
+import subprocess
 import io
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
 
-from .config import Config
-from .pipeline import run_pipeline
-
 from PySide6.QtWidgets import QWidget, QMainWindow, QFileDialog, QApplication
 from PySide6.QtUiTools import QUiLoader
 from PySide6.QtCore import QThread, Signal, QObject, QPoint, QTimer
+
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
+
+from .config import Config
+from .pipeline import run_pipeline
 
 
 # -----------------------------

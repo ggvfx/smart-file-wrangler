@@ -3,9 +3,23 @@ metadata_reader.py
 
 Extracts raw metadata from files and frame sequences.
 
+This module extracts metadata from discovered media items in a deterministic, offline-safe way.
+It supports regular files and frame-sequence records without changing upstream behavior.
+
+Responsibilities:
+- Read image, video, audio, and other file metadata
+- Use FFmpeg when available for video/audio inspection (resolution, duration, sample rate, etc.)
+- Wrap results into beginner-readable Python primitives (dict, int, str, Path)
+- Provide safe fallbacks when FFmpeg is not installed
+- Avoid duplicate filesystem scans; operate only on provided items
+
 This module is responsible only for reading metadata from files.
 It does not format, filter, sort, or output metadata for reports.
 """
+
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
 
 from pathlib import Path
 import subprocess
@@ -13,6 +27,9 @@ import json
 
 from PIL import Image
 
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 from .utils import (is_ffmpeg_available, image_extensions, video_extensions, audio_extensions)
 from .file_scanner import scan_folder
 from .config import Config

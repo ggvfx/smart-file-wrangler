@@ -14,12 +14,21 @@ This CLI is intentionally thin. It is responsible only for:
 All business logic remains in pipeline and subsystem modules.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 import argparse
 from pathlib import Path
+
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
 
 from .config import Config
 from .pipeline import run_pipeline
 from .logger import init_logger, log
+
 
 # ----------------------------------------------------------------------
 # Argument parsing

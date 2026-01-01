@@ -22,10 +22,24 @@ This module contains no filtering or business logic — it only discovers files
 and hands them off to other subsystems.
 """
 
+# ----------------------------------------------------------------------
+# Standard library imports
+# ----------------------------------------------------------------------
+
 from pathlib import Path
+
+# ----------------------------------------------------------------------
+# Local imports
+# ----------------------------------------------------------------------
+
 from .config import Config
 from .utils import detect_frame_sequences
 from .media_item import MediaItem
+
+
+# ----------------------------------------------------------------------
+# Public API
+# ----------------------------------------------------------------------
 
 def scan_folder(root_path, include_subfolders=None, file_types=None, ignore_thumbnails=False, config=None):
     """

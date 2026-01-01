@@ -1,5 +1,5 @@
 import sys
-import shutil
+import shutil, subprocess
 import io
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
@@ -47,7 +47,13 @@ class MainWindow(QMainWindow):
 
         self.config = Config()
         self.folder = None
-        self.ffmpeg_exists = shutil.which("ffmpeg") is not None
+        # re-detect ffmpeg and sync to config
+        try:
+            subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+            self.config.ffmpeg_available = True
+        except Exception:
+            self.config.ffmpeg_available = False
+
 
         # Load UI
         loader = QUiLoader()
@@ -65,6 +71,7 @@ class MainWindow(QMainWindow):
         self.ui.expand_log_check.toggled.connect(self.on_toggle_log)
 
         # Initial UI state
+        self.ui.ffmpeg_btn.clicked.connect(self.install_ffmpeg)
         self.apply_ffmpeg_status()
         self.on_mode_changed(self.ui.organise_mode_combo.currentText())
         self.on_toggle_log(self.ui.expand_log_check.isChecked())
@@ -94,7 +101,7 @@ class MainWindow(QMainWindow):
     # UI helpers
     # -----------------------------
     def apply_ffmpeg_status(self):
-        if self.ffmpeg_exists:
+        if self.config.ffmpeg_available:
             self.ui.ffmpeg_label.setText("FFmpeg installed")
             self.ui.ffmpeg_label.setStyleSheet("color: green;")
             self.ui.ffmpeg_btn.setEnabled(False)
@@ -104,7 +111,6 @@ class MainWindow(QMainWindow):
             self.ui.ffmpeg_label.setStyleSheet("color: red;")
             self.ui.ffmpeg_btn.setEnabled(True)
             self.ui.ffmpeg_btn.setVisible(True)
-            self.ui.ffmpeg_btn.clicked.connect(self.install_ffmpeg)
 
     def on_mode_changed(self, text: str):
         # Combo items are: "media type", "file extension", "name rule"
@@ -145,9 +151,36 @@ class MainWindow(QMainWindow):
             self.ui.select_folder_label.setVisible(True)
 
     def install_ffmpeg(self):
+        import platform
+        import subprocess
         import webbrowser
-        webbrowser.open("https://ffmpeg.org/download.html")
-        self.ui.log_box.append("Opened FFmpeg download page.")
+
+        system = platform.system()
+
+        try:
+            if system == "Windows":
+                subprocess.run(["winget", "install", "-e", "--id", "Gyan.FFmpeg"], check=True)
+
+            elif system == "Darwin":  # macOS
+                subprocess.run(["brew", "install", "ffmpeg"], check=True)
+
+            elif system == "Linux":
+                subprocess.run(["apt", "update"], check=True)
+                subprocess.run(["apt", "install", "-y", "ffmpeg"], check=True)
+
+            else:
+                raise RuntimeError("Unsupported OS for automatic FFmpeg install")
+
+            # expand log and disable Run button to force restart after install
+            self.ui.expand_log_check.setChecked(True)
+            self.ui.run_btn.setEnabled(False)  # Run stays disabled until restart
+            self.ui.log_box.append(f"FFmpeg installed successfully on {system}. Please restart the app to continue.")
+
+        except Exception:
+            webbrowser.open("https://ffmpeg.org/download.html")
+            self.ui.expand_log_check.setChecked(True)
+            self.ui.log_box.append("Please install FFmpeg manually, then restart the app.")
+
 
     # -----------------------------
     # Config wiring (UI -> Config)

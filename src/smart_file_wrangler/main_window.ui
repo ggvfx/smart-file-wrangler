@@ -806,9 +806,9 @@
     <widget class="QWidget" name="ffmpeg_widget" native="true">
      <property name="geometry">
       <rect>
-       <x>646</x>
+       <x>622</x>
        <y>10</y>
-       <width>107</width>
+       <width>131</width>
        <height>66</height>
       </rect>
      </property>
@@ -817,6 +817,9 @@
        <widget class="QLabel" name="ffmpeg_label">
         <property name="text">
          <string>ffmpeg Label</string>
+        </property>
+        <property name="wordWrap">
+         <bool>false</bool>
         </property>
        </widget>
       </item>

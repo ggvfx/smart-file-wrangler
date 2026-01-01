@@ -42,7 +42,7 @@ image_extensions = [
 ]
 
 video_extensions = [
-    ".mp4", ".mov", ".avi", ".mkv"
+    ".mp4", ".mov", ".avi", ".mkv", ".flv", ".webm"
 ]
 
 audio_extensions = [

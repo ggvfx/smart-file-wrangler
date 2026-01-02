@@ -26,15 +26,28 @@ from contextlib import redirect_stdout, redirect_stderr
 
 from PySide6.QtWidgets import QWidget, QMainWindow, QFileDialog, QApplication
 from PySide6.QtUiTools import QUiLoader
-from PySide6.QtCore import QThread, Signal, QObject, QPoint, QTimer
+from PySide6.QtCore import QThread, Signal, QObject, QPoint, QTimer, QFile, QIODevice
 
 # ----------------------------------------------------------------------
 # Local imports
 # ----------------------------------------------------------------------
 
-from .config import Config
-from .pipeline import run_pipeline
+from smart_file_wrangler.config import Config
+from smart_file_wrangler.pipeline import run_pipeline
 
+# -----------------------------
+# Build helper
+# -----------------------------
+def ui_resource_path(filename: str) -> Path:
+    """
+    Return the path to a bundled UI resource.
+
+    - In dev:   <this_package_dir>/<filename>
+    - Frozen:   <_MEIPASS>/smart_file_wrangler/<filename>
+    """
+    if hasattr(sys, "_MEIPASS"):  # PyInstaller
+        return Path(sys._MEIPASS) / "smart_file_wrangler" / filename
+    return Path(__file__).resolve().parent / filename
 
 # -----------------------------
 # Worker to run pipeline off the UI thread
@@ -81,8 +94,19 @@ class MainWindow(QMainWindow):
 
         # Load UI
         loader = QUiLoader()
-        ui_file = Path(__file__).parent / "main_window.ui"
-        self.ui = loader.load(str(ui_file))
+
+        ui_path = ui_resource_path("main_window.ui")
+        ui_file = QFile(str(ui_path))
+
+        if not ui_file.open(QIODevice.ReadOnly):
+            raise RuntimeError(f"Unable to open/read ui device: {ui_path}")
+
+        self.ui = loader.load(ui_file)
+        ui_file.close()
+
+        if self.ui is None:
+            raise RuntimeError(f"Failed to load UI file: {ui_path}")
+
         self.setCentralWidget(self.ui)
         self.ui.log_box.setMinimumHeight(120)
 

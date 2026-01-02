@@ -21,3 +21,7 @@ output/thumbnails/
 # PyCharm / VSCode
 .idea/
 .vscode/
+
+build_env/
+build/
+dist/

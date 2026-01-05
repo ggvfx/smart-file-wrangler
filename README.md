@@ -43,8 +43,8 @@ Option included for installing ffmpeg (automatically if deoendencies met, otherw
 ### FFmpeg manual install locations:
 Windows:
 - C:\ffmpeg\bin\ffmpeg.exe
-- C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-- C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe"
+- C:\Program Files\ffmpeg\bin\ffmpeg.exe
+- C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe
 
 Mac:
 - /Applications/ffmpeg  - mac manual

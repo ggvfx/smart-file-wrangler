@@ -40,16 +40,17 @@ If `ffmpeg` is *not installed*:
 
 Option included for installing ffmpeg (automatically if deoendencies met, otherwise will open webpage for manual install).
 
-###FFmpeg manual install locations:
+### FFmpeg manual install locations:
 Windows:
-C:\ffmpeg\bin\ffmpeg.exe
-C:\Program Files\ffmpeg\bin\ffmpeg.exe",
-C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe",
-Mac:
-/Applications/ffmpeg  - mac manual
-/usr/local/bin/ffmpeg  - mac brew intel/manual
+- C:\ffmpeg\bin\ffmpeg.exe
+- C:\Program Files\ffmpeg\bin\ffmpeg.exe",
+- C:\Program Files (x86)\ffmpeg\bin\ffmpeg.exe"
 
-###Smart File Wrangler must be restarted after ffmpeg install
+Mac:
+- /Applications/ffmpeg  - mac manual
+- /usr/local/bin/ffmpeg  - mac brew intel/manual
+
+### Smart File Wrangler must be restarted after ffmpeg install
 
 ---
 

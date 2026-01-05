@@ -20,6 +20,8 @@ Constraints:
 # ----------------------------------------------------------------------
 import sys
 import subprocess
+import shutil
+import os
 import io
 from pathlib import Path
 from contextlib import redirect_stdout, redirect_stderr
@@ -84,13 +86,38 @@ class MainWindow(QMainWindow):
 
         self.config = Config()
         self.folder = None
-        # re-detect ffmpeg and sync to config
-        try:
-            subprocess.run(["ffmpeg", "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-            self.config.ffmpeg_available = True
-        except Exception:
-            self.config.ffmpeg_available = False
+        import shutil
+        import os
+        import subprocess
 
+        # Check for ffmpeg
+        ffmpeg_path = shutil.which("ffmpeg")
+
+        if not ffmpeg_path:
+            # Common manual install locations
+            manual_locations = [
+                "C:\\ffmpeg\\bin\\ffmpeg.exe",  # Windows manual install
+                "C:\\Program Files\\ffmpeg\\bin\\ffmpeg.exe",
+                "C:\\Program Files (x86)\\ffmpeg\\bin\\ffmpeg.exe",
+                "/Applications/ffmpeg",  # mac manual
+                "/usr/local/bin/ffmpeg",  # mac brew intel/manual
+            ]
+
+            for path in manual_locations:
+                if os.path.isfile(path) and os.access(path, os.X_OK):
+                    ffmpeg_path = path
+                    break
+
+        # Verify ffmpeg runs
+        if ffmpeg_path:
+            try:
+                subprocess.run([ffmpeg_path, "-version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                               check=True)
+                self.config.ffmpeg_available = True
+            except Exception:
+                self.config.ffmpeg_available = False
+        else:
+            self.config.ffmpeg_available = False
 
         # Load UI
         loader = QUiLoader()

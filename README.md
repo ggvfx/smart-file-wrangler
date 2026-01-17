@@ -1,4 +1,4 @@
-# Smart File Wrangler ![Smart File Wrangler icon](assets/smart-file-wrangler.png)
+# Smart File Wrangler ![Smart File Wrangler icon](assets/smart-file-wrangler32.png)
 Python Automation for Media Pipelines
 
 **Smart File Wrangler** is a powerful, modular Python automation tool designed to tame the chaos of media-heavy folders. Built specifically for film, VFX, and post-production pipelines, it intelligently identifies file sequences, automates organization, and generates the technical metadata reports and thumbnails needed for a professional workflow.

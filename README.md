@@ -1,7 +1,7 @@
 # Smart File Wrangler ![Smart File Wrangler icon](assets/smart-file-wrangler32.png)
 Python Automation for Media Pipelines
 
-**Smart File Wrangler** is a powerful, modular Python automation tool designed to tame the chaos of media-heavy folders. Built specifically for film, VFX, and post-production pipelines, it intelligently identifies file sequences, automates organization, and generates the technical metadata reports and thumbnails needed for a professional workflow.
+**Smart File Wrangler** is a modular Python automation utility designed to solve the "manual data-wrangling" bottleneck in high-volume media pipelines. Built for VFX and Post-Production, it provides a standardized execution layer to identify, sequence-group, and metadata-tag thousands of assets automatically. By integrating automated reporting and thumbnail generation, it ensures data transparency and pipeline health across cross-departmental handoffs.
 
 ![Smart File Wrangler UI](assets/smartFileWranlgerUI.PNG)
 *Professional media organization at the click of a button.*
@@ -9,23 +9,18 @@ Python Automation for Media Pipelines
 ---
 
 ## 🚀 The Concept
-Media pipelines often involve thousands of loose files, complex image sequences, and scattered video assets. **Smart File Wrangler** provides a structured, "safe-fixed" execution pipeline to clean these directories.
-
-Unlike standard file managers, this tool understands **frame sequences** (e.g., `shot_01.[1001-1050].exr`). It treats them as a single media entity for organization, thumbnail generation, and reporting, ensuring your project structure remains clean and readable.
+Media pipelines often involve thousands of loose files, complex image sequences, and scattered video assets that require manual sorting before ingestion into a pipeline. Standard file managers do not understand frame sequences (e.g., `shot_01.[1001-1050].exr`), leading to broken paths and lost metadata. Smart File Wrangler eliminates this risk by treating sequences as single "Media Items," ensuring that organization and reporting remain technically accurate and human-readable.
 
 ---
 
 ## ✨ Key Features
 
-* **Sequence Intelligence:** Automatically detects and groups image sequences, treating them as a single "Media Item" in reports and thumbnails.
-* **Flexible Organization:** Choose between **Move** or **Copy** operations within the original directory.
-* **Customizable Sort Modes:**
-    * **Media Type:** Groups by Video, Audio, Images, or Other.
-    * **File Extension:** Sorts by specific formats.
-    * **Filename Filter:** Custom "Starts With" or "Contains" logic to target specific naming conventions.
-* **Automated Thumbnails:** Generates individual thumbnail files for images and videos using a user-defined horizontal resolution (e.g., 128px to 2048px).
-* **Multi-Format Reporting:** Export your folder's "state of play" to CSV, JSON, Excel, or a visual File Tree.
-* **Safe Fallback:** Any file that does not satisfy the active filters is automatically placed in an `unsorted` folder.
+* **Sequence-Aware Intelligence:** Automatically detects and groups frame-based image sequences, treating them as a single "Media Item" for organization and technical reporting.
+* **Logic-Driven Organization:** Implements "Safe-Fixed" execution modes (Move/Copy) based on media type, file extension, or naming conventions (Starts With/Contains) to enforce pipeline standards.
+* **Automated Metadata Reporting:** Generates a "state of play" for any directory, exporting technical audits to CSV, JSON, Excel or simple file tree for easy integration into production tracking software.
+* **Democratized Media Access (Automated Thumbnails):** Generates lightweight previews for images, videos, and complex frame sequences at user-defined resolutions (56px to 4096px). This enables non-technical stakeholders to perform visual health checks and populate production databases or reports without requiring specialized VFX software to open files.
+* **Fail-Safe Error Handling:** Any asset not meeting active filter criteria is routed to an `unsorted` directory, ensuring no data is lost during the automation process.
+* **FFmpeg Extension Layer:** Dynamically unlocks advanced metadata extraction (bitrate, sample rate, resolution) when FFmpeg is detected, while maintaining a lightweight, zero-dependency core.
 
 ---
 

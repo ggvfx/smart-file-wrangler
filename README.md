@@ -3,7 +3,7 @@ Python Automation for Media Pipelines - Windows and Mac installers available for
 
 **Smart File Wrangler** is a modular Python automation utility designed to solve the "manual data-wrangling" bottleneck in high-volume media pipelines. Built for VFX and Post-Production, it provides a standardized execution layer to identify, sequence-group, and metadata-tag thousands of assets automatically. By integrating automated reporting and thumbnail generation, it ensures data transparency and pipeline health across cross-departmental handoffs.
 
-![Smart File Wrangler UI2](assets/smartFileWranlgerUI2.Png)
+![Smart File Wrangler UI2](assets/smartFileWranlgerUI2.png)
 *Professional media organization at the click of a button.*
 
 ---
